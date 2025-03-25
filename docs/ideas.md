@@ -1,21 +1,20 @@
 # Ideas de proyecto
 
 ## Idea 1
+Werehouse
+Sistema de gestión de inventarios
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
-
-Aplicaciones similares:
-
-- ...
-- ...
-- ...
+Aplicaciones 
+- SmartAsset
+- Odoo
+- Finale Inventory
 
 ## Idea 2
-
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+Neoant
+Sistema de gestión de nómina
 
 Aplicaciones similares:
 
-- ...
-- ...
-- ...
+- Dataico
+- Humand
+- Alegra
