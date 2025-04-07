@@ -104,7 +104,7 @@ fun Encabezado() {
 fun Inicio(){
     Column (modifier = Modifier.padding(70.dp,100.dp,70.dp,500.dp)) {
         Mytext("Bienvenid@",
-            MaterialTheme.colorScheme.onBackground,
+            Color.Black,
             MaterialTheme.typography.displayMedium)
 
     }
