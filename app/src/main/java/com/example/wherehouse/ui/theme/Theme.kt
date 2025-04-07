@@ -15,7 +15,7 @@ private val DarkColorScheme = darkColorScheme(
     primary = Purple80,
     secondary = PurpleGrey80,
     tertiary = Pink80,
-    onBackground = White
+    onBackground = Black
 )
 
 private val LightColorScheme = lightColorScheme(
@@ -36,7 +36,7 @@ private val LightColorScheme = lightColorScheme(
 )
 
 @Composable
-fun WherehouseTheme(
+public fun WherehouseTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     // Dynamic color is available on Android 12+
     dynamicColor: Boolean = true,
@@ -54,7 +54,6 @@ fun WherehouseTheme(
 
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = Typography,
         content = content
     )
 }

@@ -45,6 +45,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
+    implementation("androidx.navigation:navigation-compose:2.8.9")
     implementation(libs.androidx.ui)
     implementation("androidx.navigation:navigation-compose:2.5.0-alpha01")
     implementation(libs.androidx.ui.graphics)

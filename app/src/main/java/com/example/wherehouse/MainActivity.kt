@@ -30,6 +30,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material3.Button
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -122,12 +123,15 @@ fun Final() {
             .background(Color.White)
             .padding(vertical = 16.dp, horizontal = 32.dp)
     ) {
-        Text(
-            text = "AGREGAGAR\nPRODUCTO",
-            color = Color.Black,
-            style = MaterialTheme.typography.bodyLarge,
-            textAlign = TextAlign.Center
-        )
+        Button(onClick = /**/)
+        {
+            Text(
+                text = "AGREGAGAR\nPRODUCTO",
+                color = Color.Black,
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.Center
+            )
+        }
     }
 }
 
