@@ -55,7 +55,6 @@ fun CreateAccountScreen() {
     ) {
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Texto principal
         Text(
             text = "Crea tu cuenta",
             style = MaterialTheme.typography.headlineSmall,
@@ -65,18 +64,16 @@ fun CreateAccountScreen() {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Imagen o ícono (reemplaza por tu recurso)
-        // Si tienes el asset, usa: painterResource(R.drawable.tus_manos_con_caja)
+
         Icon(
             imageVector = Icons.Default.AccountCircle,
             contentDescription = "Caja en manos",
-            tint = Color.Black, // O usa Color.Unspecified para que muestre su color original
+            tint = Color.Black,
             modifier = Modifier.size(120.dp)
         )
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Contenedor con fondo naranja para los campos
         Column(
             modifier = Modifier
                 .fillMaxWidth()
