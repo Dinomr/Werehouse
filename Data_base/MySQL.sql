@@ -62,6 +62,6 @@ CREATE TABLE Transferencia (
 
 CREATE TABLE Cliente (
     id_cliente INT AUTO_INCREMENT PRIMARY KEY,
-    nombre VARCHAR(100),
-    ciudad VARCHAR(100)
+    nombre VARCHAR(50),
+    ciudad VARCHAR(50)
 );
