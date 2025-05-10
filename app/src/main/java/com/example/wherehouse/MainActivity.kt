@@ -71,6 +71,9 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.material3.ExperimentalMaterial3Api
+import Screens.AddStaffScreen
+import Screens.SuccessStaffScreen
+import Screens.SuccessSucursalScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 class MainActivity : ComponentActivity() {
@@ -105,6 +108,23 @@ class MainActivity : ComponentActivity() {
                                 popUpTo(0) { inclusive = true }
                             }
                         })
+                    }
+                    composable("add_staff") {
+                        AddStaffScreen(navController)
+                    }
+                    composable("success_staff") {
+                        SuccessStaffScreen(onInventoryClick = {
+                            navController.navigate("main") {
+                                popUpTo(0) { inclusive = true }
+                            }
+                        }, navController = navController)
+                    }
+                    composable("success_sucursal") {
+                        SuccessSucursalScreen(onInventoryClick = {
+                            navController.navigate("main") {
+                                popUpTo(0) { inclusive = true }
+                            }
+                        }, navController = navController)
                     }
                 }
             }
@@ -438,6 +458,10 @@ fun MainScreen(navController: NavController) {
             onAddBranchClick = {
                 menuVisible = false
                 navController.navigate("add_branch")
+            },
+            onAddStaffClick = {
+                menuVisible = false
+                navController.navigate("add_staff")
             }
         )
     }

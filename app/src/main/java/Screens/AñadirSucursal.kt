@@ -12,14 +12,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.wherehouse.R
-import com.example.wherehouse.ui.theme.Black
-import com.example.wherehouse.ui.theme.WherehouseTheme
 import Screens.HamburgerMenu
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.material.icons.filled.Menu
@@ -165,7 +161,7 @@ fun AddBranchScreen(navController: NavController) {
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(
-                    onClick = { /* Acción para añadir sucursal */ },
+                    onClick = { navController.navigate("success_sucursal") },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(48.dp)
