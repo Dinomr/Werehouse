@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -57,11 +58,10 @@ fun SuccessScreen(onInventoryClick: () -> Unit, navController: NavController? = 
             contentAlignment = Alignment.Center
         ) {
             Image(
-                painter = painterResource(id = R.drawable.ic_launcher_background),
+                painter = painterResource(id = R.drawable.creacion_exito),
                 contentDescription = "Cuenta creada",
                 modifier = Modifier
-                    .fillMaxWidth(0.6f)
-                    .aspectRatio(1f)
+                    .size(250.dp)
                     .padding(vertical = 10.dp)
             )
         }

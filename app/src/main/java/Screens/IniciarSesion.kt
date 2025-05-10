@@ -26,6 +26,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.CircleShape
 
 @Composable
 fun LoginScreen(navController: NavController) {
@@ -57,11 +58,13 @@ fun LoginScreen(navController: NavController) {
                     modifier = Modifier.size(40.dp).clickable { menuVisible = true },
                     tint = Color.White
                 )
-                Icon(
-                    imageVector = Icons.Default.AccountCircle,
-                    contentDescription = "Cuenta",
-                    modifier = Modifier.size(40.dp).clickable { navController.navigate("login") },
-                    tint = Color.Gray
+                Image(
+                    painter = painterResource(id = R.drawable.logo),
+                    contentDescription = "Logo",
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .clickable { navController.navigate("login") }
                 )
             }
         }
@@ -79,13 +82,13 @@ fun LoginScreen(navController: NavController) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(100.dp),
+                .height(220.dp),
             contentAlignment = Alignment.Center
         ) {
             Image(
                 painter = painterResource(id = R.drawable.iniciar_sesion),
                 contentDescription = "Imagen de login",
-                modifier = Modifier.size(90.dp)
+                modifier = Modifier.size(180.dp)
             )
         }
         Spacer(modifier = Modifier.height(24.dp))

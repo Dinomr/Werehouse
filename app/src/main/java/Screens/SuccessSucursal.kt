@@ -88,11 +88,10 @@ fun SuccessSucursalScreen(onInventoryClick: () -> Unit, navController: NavContro
             contentAlignment = Alignment.Center
         ) {
             Image(
-                painter = painterResource(id = R.drawable.ic_launcher_background),
+                painter = painterResource(id = R.drawable.creacion_exito),
                 contentDescription = "Sucursal creada",
                 modifier = Modifier
-                    .fillMaxWidth(0.6f)
-                    .aspectRatio(1f)
+                    .size(250.dp)
                     .padding(vertical = 10.dp)
             )
         }

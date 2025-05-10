@@ -259,7 +259,11 @@ fun Mytext (text: String,color: Color,style: TextStyle){
 @Composable
 fun MainScreen(navController: NavController) {
     var menuVisible by remember { mutableStateOf(false) }
-    val productos = listOf("Producto 1", "Producto 2", "Producto 3", "Producto 4") // Ejemplo de nombres
+    val productos = listOf(
+        "Producto 1", "Producto 2", "Producto 3", "Producto 4",
+        "Producto 5", "Producto 6", "Producto 7", "Producto 8", "Producto 9", "Producto 10",
+        "Producto 11", "Producto 12", "Producto 13", "Producto 14"
+    ) // Ahora hay 14 productos
     var productoFiltro by remember { mutableStateOf("") }
     var productoExpanded by remember { mutableStateOf(false) }
     var sucursalFiltro by remember { mutableStateOf("") }
@@ -400,7 +404,7 @@ fun MainScreen(navController: NavController) {
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            painter = painterResource(id = R.drawable.ic_launcher_background),
+                            painter = painterResource(id = R.drawable.paisaje),
                             contentDescription = "Imagen producto",
                             tint = Color.Unspecified,
                             modifier = Modifier.size(40.dp)

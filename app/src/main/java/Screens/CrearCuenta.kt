@@ -9,7 +9,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -30,7 +29,12 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.compose.ui.text.TextStyle
 import android.os.Bundle
+import androidx.compose.foundation.Image
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.ui.res.painterResource
+import com.example.wherehouse.R
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.filled.Menu
 
 @OptIn(ExperimentalMaterial3Api::class)
 class RegisterActivity : ComponentActivity() {
@@ -80,11 +84,13 @@ fun CreateAccountScreen(navController: NavController, onSuccess: (() -> Unit)? =
                     modifier = Modifier.size(40.dp).clickable { menuVisible = true },
                     tint = Color.White
                 )
-                Icon(
-                    imageVector = Icons.Default.AccountCircle,
-                    contentDescription = "Cuenta",
-                    modifier = Modifier.size(40.dp).clickable { navController.navigate("login") },
-                    tint = Color.Gray
+                Image(
+                    painter = painterResource(id = R.drawable.logo),
+                    contentDescription = "Logo",
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .clickable { navController.navigate("login") }
                 )
             }
         }
@@ -99,12 +105,18 @@ fun CreateAccountScreen(navController: NavController, onSuccess: (() -> Unit)? =
         )
         // Espacio para imagen o ícono
         Spacer(modifier = Modifier.height(24.dp))
-        Icon(
-            imageVector = Icons.Default.AccountCircle,
-            contentDescription = "Caja en manos",
-            tint = Color.Black,
-            modifier = Modifier.size(120.dp).align(Alignment.CenterHorizontally)
-        )
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(220.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.crear_cuenta),
+                contentDescription = "Imagen crear cuenta",
+                modifier = Modifier.size(180.dp)
+            )
+        }
         Spacer(modifier = Modifier.height(24.dp))
         // Tarjeta naranja con campos
         Column(
