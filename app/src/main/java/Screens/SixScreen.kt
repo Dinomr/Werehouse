@@ -18,115 +18,195 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.wherehouse.R
 import com.example.wherehouse.ui.theme.WherehouseTheme
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.ui.text.TextStyle
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.compose.foundation.clickable
 
 @Composable
-fun LoginScreen() {
+fun LoginScreen(navController: NavController) {
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var rememberMe by remember { mutableStateOf(false) }
+    var menuVisible by remember { mutableStateOf(false) }
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.White)
-            .padding(16.dp)
     ) {
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Welcome text
-        Text(
-            text = "Bienvenido a tu\nsistema de inventario",
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFF002366),
-            modifier = Modifier.align(Alignment.CenterHorizontally)
-        )
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        Image(
-            painter = painterResource(id = R.drawable.ic_launcher_foreground),
-            contentDescription = "Cajas",
+        // Encabezado igual que FourScreen
+        Box(
             modifier = Modifier
-                .height(150.dp)
-                .align(Alignment.CenterHorizontally)
+                .fillMaxWidth()
+                .background(Color.Black)
+                .systemBarsPadding()
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 30.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Menu,
+                    contentDescription = "Menú",
+                    modifier = Modifier.size(40.dp).clickable { menuVisible = true },
+                    tint = Color.White
+                )
+                Icon(
+                    imageVector = Icons.Default.AccountCircle,
+                    contentDescription = "Cuenta",
+                    modifier = Modifier.size(40.dp).clickable { navController.navigate("login") },
+                    tint = Color.Gray
+                )
+            }
+        }
+        // Título centrado
+        Text(
+            text = "Iniciar sesión",
+            style = MaterialTheme.typography.displaySmall,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 16.dp, bottom = 8.dp),
+            textAlign = TextAlign.Center
         )
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        // Login form card
+        // Espacio para imagen
+        Spacer(modifier = Modifier.height(24.dp))
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(100.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.ic_launcher_foreground),
+                contentDescription = "Imagen de login",
+                modifier = Modifier.size(90.dp)
+            )
+        }
+        Spacer(modifier = Modifier.height(24.dp))
+        // Tarjeta naranja con campos
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(20.dp))
-                .background(Color(0xFFF8AA1A))
+                .padding(horizontal = 16.dp)
+                .background(Color(0xFFF8AA1A), shape = RoundedCornerShape(20.dp))
                 .padding(16.dp)
         ) {
-            var email by remember { mutableStateOf("") }
-            var password by remember { mutableStateOf("") }
-            var rememberMe by remember { mutableStateOf(false) }
-
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
-                placeholder = { Text("Correo") },
-                modifier = Modifier.fillMaxWidth().background(Color.White),
+                label = { Text("Correo", color = Color.Black) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.White, RoundedCornerShape(8.dp))
+                    .height(56.dp),
+                textStyle = TextStyle(color = Color.Black, textAlign = TextAlign.Start, fontSize = MaterialTheme.typography.bodyMedium.fontSize),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color.Transparent,
+                    unfocusedBorderColor = Color.Transparent,
+                    cursorColor = Color.Black,
+                    focusedLabelColor = Color.Black,
+                    unfocusedLabelColor = Color.Black,
+                    focusedTextColor = Color.Black,
+                    unfocusedTextColor = Color.Black
+                ),
                 singleLine = true
             )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
+            Spacer(modifier = Modifier.height(10.dp))
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
-                placeholder = { Text("Contraseña") },
-                visualTransformation = PasswordVisualTransformation(),
-                modifier = Modifier.fillMaxWidth().background(Color.White),
-                singleLine = true
+                label = { Text("Contraseña", color = Color.Black) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.White, RoundedCornerShape(8.dp))
+                    .height(56.dp),
+                textStyle = TextStyle(color = Color.Black, textAlign = TextAlign.Start, fontSize = MaterialTheme.typography.bodyMedium.fontSize),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color.Transparent,
+                    unfocusedBorderColor = Color.Transparent,
+                    cursorColor = Color.Black,
+                    focusedLabelColor = Color.Black,
+                    unfocusedLabelColor = Color.Black,
+                    focusedTextColor = Color.Black,
+                    unfocusedTextColor = Color.Black
+                ),
+                singleLine = true,
+                visualTransformation = PasswordVisualTransformation()
             )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
+            Spacer(modifier = Modifier.height(10.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Switch(checked = rememberMe, onCheckedChange = { rememberMe = it })
-                    Text(text = "Recordar sesión")
+                    Checkbox(checked = rememberMe, onCheckedChange = { rememberMe = it })
+                    Text(text = "Recordar sesión", fontSize = 12.sp, color = Color.Black)
                 }
-                Text(text = "¿Olvidó su contraseña?", fontSize = 12.sp)
+                Text(text = "¿Olvidó su contraseña?", fontSize = 12.sp, color = Color.Black)
             }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
+            Spacer(modifier = Modifier.height(16.dp))
             Button(
                 onClick = { /* Acción de iniciar sesión */ },
-                modifier = Modifier.fillMaxWidth().background(Color.White),
-                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    .clip(RoundedCornerShape(50)),
                 colors = ButtonDefaults.buttonColors(containerColor = Color.White)
             ) {
-                Text(text = "INICIAR SESIÓN", color = Color.Black)
+                Text(
+                    text = "INICIAR SESIÓN",
+                    color = Color.Black,
+                    style = MaterialTheme.typography.bodyLarge
+                )
             }
-
             Spacer(modifier = Modifier.height(8.dp))
-
             Text(
-                text = "¿No tienes cuenta? Crear cuenta",
-                modifier = Modifier.align(Alignment.CenterHorizontally),
-                fontSize = 12.sp
+                text = "¿No tienes cuenta?\nCrear cuenta",
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .clickable { navController.navigate("crear_cuenta") },
+                fontSize = 12.sp,
+                color = Color.Black,
+                textAlign = TextAlign.Center
             )
         }
+    }
+    if (menuVisible) {
+        HamburgerMenu(
+            visible = true,
+            onDismiss = { menuVisible = false },
+            onInventarioClick = {
+                menuVisible = false
+                navController.popBackStack("main", false)
+            },
+            onAddBranchClick = {
+                menuVisible = false
+                navController.navigate("add_branch")
+            }
+        )
     }
 }
 
 @Preview(showBackground = true)
 @Composable
 fun SixScreen() {
-    WherehouseTheme {
-        LoginScreen()
+    val navController = rememberNavController()
+    NavHost(navController = navController, startDestination = "login") {
+        composable("login") { LoginScreen(navController) }
+        composable("crear_cuenta") { com.example.wherehouse.screens.CreateAccountScreen(navController) }
     }
 }
