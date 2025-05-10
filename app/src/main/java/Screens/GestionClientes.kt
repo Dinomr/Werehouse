@@ -37,9 +37,9 @@ fun FiveScreen() {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
+                tint = Color.Black,
                 imageVector = Icons.Default.ArrowBack,
                 contentDescription = "Atrás",
-                tint = Color.Black,
                 modifier = Modifier.size(30.dp)
             )
             Spacer(modifier = Modifier.width(8.dp))

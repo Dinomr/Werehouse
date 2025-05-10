@@ -1,17 +1,13 @@
-package com.example.wherehouse.screens
+package Screens
 
-import android.app.Activity
-import android.content.Intent
+import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -20,47 +16,29 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.wherehouse.R
 import com.example.wherehouse.ui.theme.WherehouseTheme
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.ui.text.TextStyle
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.compose.ui.text.TextStyle
-import android.os.Bundle
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-
-@OptIn(ExperimentalMaterial3Api::class)
-class RegisterActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContent {
-            WherehouseTheme {
-                Surface(color = MaterialTheme.colorScheme.background) {
-                    val navController = rememberNavController()
-                    NavHost(navController = navController, startDestination = "registro") {
-                        composable("registro") { CreateAccountScreen(navController) }
-                    }
-                }
-            }
-        }
-    }
-}
+import androidx.compose.foundation.clickable
 
 @Composable
-fun CreateAccountScreen(navController: NavController, onSuccess: (() -> Unit)? = null) {
-    val context = LocalContext.current
-    var name by remember { mutableStateOf("") }
+fun LoginScreen(navController: NavController) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var rememberMe by remember { mutableStateOf(false) }
     var menuVisible by remember { mutableStateOf(false) }
     Column(
         modifier = Modifier
@@ -96,21 +74,27 @@ fun CreateAccountScreen(navController: NavController, onSuccess: (() -> Unit)? =
         }
         // Título centrado
         Text(
-            text = "Crea tu cuenta",
+            text = "Iniciar sesión",
             style = MaterialTheme.typography.displaySmall,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 16.dp, bottom = 8.dp),
             textAlign = TextAlign.Center
         )
-        // Espacio para imagen o ícono
+        // Espacio para imagen
         Spacer(modifier = Modifier.height(24.dp))
-        Icon(
-            imageVector = Icons.Default.AccountCircle,
-            contentDescription = "Caja en manos",
-            tint = Color.Black,
-            modifier = Modifier.size(120.dp).align(Alignment.CenterHorizontally)
-        )
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(100.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.ic_launcher_foreground),
+                contentDescription = "Imagen de login",
+                modifier = Modifier.size(90.dp)
+            )
+        }
         Spacer(modifier = Modifier.height(24.dp))
         // Tarjeta naranja con campos
         Column(
@@ -118,37 +102,15 @@ fun CreateAccountScreen(navController: NavController, onSuccess: (() -> Unit)? =
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
                 .background(Color(0xFFF8AA1A), shape = RoundedCornerShape(20.dp))
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(16.dp)
         ) {
-            OutlinedTextField(
-                value = name,
-                onValueChange = { name = it },
-                label = { Text("Nombre", color = Color.Black) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(Color.White, shape = RoundedCornerShape(8.dp))
-                    .height(56.dp),
-                textStyle = TextStyle(color = Color.Black, textAlign = TextAlign.Start, fontSize = MaterialTheme.typography.bodyMedium.fontSize),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color.Transparent,
-                    unfocusedBorderColor = Color.Transparent,
-                    cursorColor = Color.Black,
-                    focusedLabelColor = Color.Black,
-                    unfocusedLabelColor = Color.Black,
-                    focusedTextColor = Color.Black,
-                    unfocusedTextColor = Color.Black
-                ),
-                singleLine = true
-            )
-            Spacer(modifier = Modifier.height(10.dp))
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
                 label = { Text("Correo", color = Color.Black) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color.White, shape = RoundedCornerShape(8.dp))
+                    .background(Color.White, RoundedCornerShape(8.dp))
                     .height(56.dp),
                 textStyle = TextStyle(color = Color.Black, textAlign = TextAlign.Start, fontSize = MaterialTheme.typography.bodyMedium.fontSize),
                 colors = OutlinedTextFieldDefaults.colors(
@@ -169,7 +131,7 @@ fun CreateAccountScreen(navController: NavController, onSuccess: (() -> Unit)? =
                 label = { Text("Contraseña", color = Color.Black) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color.White, shape = RoundedCornerShape(8.dp))
+                    .background(Color.White, RoundedCornerShape(8.dp))
                     .height(56.dp),
                 textStyle = TextStyle(color = Color.Black, textAlign = TextAlign.Start, fontSize = MaterialTheme.typography.bodyMedium.fontSize),
                 colors = OutlinedTextFieldDefaults.colors(
@@ -182,14 +144,23 @@ fun CreateAccountScreen(navController: NavController, onSuccess: (() -> Unit)? =
                     unfocusedTextColor = Color.Black
                 ),
                 singleLine = true,
-                visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
+                visualTransformation = PasswordVisualTransformation()
             )
+            Spacer(modifier = Modifier.height(10.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(checked = rememberMe, onCheckedChange = { rememberMe = it })
+                    Text(text = "Recordar sesión", fontSize = 12.sp, color = Color.Black)
+                }
+                Text(text = "¿Olvidó su contraseña?", fontSize = 12.sp, color = Color.Black)
+            }
             Spacer(modifier = Modifier.height(16.dp))
             Button(
-                onClick = {
-                    onSuccess?.invoke() ?: navController.navigate("success")
-                },
+                onClick = { /* Acción de iniciar sesión */ },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(48.dp)
@@ -197,30 +168,25 @@ fun CreateAccountScreen(navController: NavController, onSuccess: (() -> Unit)? =
                 colors = ButtonDefaults.buttonColors(containerColor = Color.White)
             ) {
                 Text(
-                    text = "CREAR CUENTA",
+                    text = "INICIAR SESIÓN",
                     color = Color.Black,
                     style = MaterialTheme.typography.bodyLarge
                 )
             }
-            Spacer(modifier = Modifier.height(32.dp))
-            Row(
-                horizontalArrangement = Arrangement.Center,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(text = "¿Tienes una cuenta? ")
-                Text(
-                    text = "INICIAR SESIÓN",
-                    color = Color.Blue,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.clickable {
-                        navController.navigate("login")
-                    }
-                )
-            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "¿No tienes cuenta?\nCrear cuenta",
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .clickable { navController.navigate("crear_cuenta") },
+                fontSize = 12.sp,
+                color = Color.Black,
+                textAlign = TextAlign.Center
+            )
         }
     }
     if (menuVisible) {
-        Screens.HamburgerMenu(
+        HamburgerMenu(
             visible = true,
             onDismiss = { menuVisible = false },
             onInventarioClick = {
@@ -230,6 +196,10 @@ fun CreateAccountScreen(navController: NavController, onSuccess: (() -> Unit)? =
             onAddBranchClick = {
                 menuVisible = false
                 navController.navigate("add_branch")
+            },
+            onAddStaffClick = {
+                menuVisible = false
+                navController.navigate("add_staff")
             }
         )
     }
@@ -237,8 +207,22 @@ fun CreateAccountScreen(navController: NavController, onSuccess: (() -> Unit)? =
 
 @Preview(showBackground = true)
 @Composable
-fun SevenScreenPreview() {
-    // Usar un NavController falso para el preview
+fun SixScreen() {
     val navController = rememberNavController()
-    CreateAccountScreen(navController)
+    NavHost(navController = navController, startDestination = "login") {
+        composable("login") { LoginScreen(navController) }
+        composable("crear_cuenta") {
+            com.example.wherehouse.screens.CreateAccountScreen(
+                navController = navController,
+                onSuccess = { navController.navigate("success") }
+            )
+        }
+        composable("success") {
+            Screens.SuccessScreen(onInventoryClick = {
+                navController.navigate("main") {
+                    popUpTo(0) { inclusive = true }
+                }
+            })
+        }
+    }
 }

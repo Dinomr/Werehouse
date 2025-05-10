@@ -187,7 +187,7 @@ fun AddBranchScreen(navController: NavController) {
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.clickable {
-                    // Acción al hacer clic
+                    navController.navigate("add_staff")
                 }
             )
         }
@@ -202,6 +202,10 @@ fun AddBranchScreen(navController: NavController) {
                 onAddBranchClick = {
                     menuVisible = false
                     // Ya estás en la pantalla de sucursal, así que no navegas a ningún lado
+                },
+                onAddStaffClick = {
+                    menuVisible = false
+                    navController.navigate("add_staff")
                 }
             )
         }

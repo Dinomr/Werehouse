@@ -70,38 +70,10 @@ fun SuccessScreen(onInventoryClick: () -> Unit, navController: NavController? = 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White),
+            .background(Color.White)
+            .systemBarsPadding(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Encabezado igual que en el resto de la app
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Color.Black)
-                .systemBarsPadding()
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 30.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Menu,
-                    contentDescription = "Menú",
-                    modifier = Modifier.size(40.dp).clickable { menuVisible = true },
-                    tint = Color.White
-                )
-                Icon(
-                    imageVector = Icons.Default.AccountCircle,
-                    contentDescription = "Cuenta",
-                    modifier = Modifier.size(40.dp).clickable {
-                        navController?.navigate("login")
-                    },
-                    tint = Color.Gray
-                )
-            }
-        }
         Spacer(modifier = Modifier.height(32.dp))
         Text(
             text = "Se ha creado la cuenta con éxito",
@@ -111,29 +83,42 @@ fun SuccessScreen(onInventoryClick: () -> Unit, navController: NavController? = 
             modifier = Modifier.padding(50.dp,50.dp,50.dp,50.dp)
         )
         Spacer(modifier = Modifier.height(32.dp))
-        Image(
-            painter = painterResource(id = R.drawable.ic_launcher_background),
-            contentDescription = "Cuenta creada",
-            modifier = Modifier
-                .fillMaxWidth(0.6f)
-                .aspectRatio(1f)
-                .padding(vertical = 10.dp)
-        )
-        Spacer(modifier = Modifier.weight(1f))
-        Button(
-            onClick = onInventoryClick,
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF8AA1A)),
-            shape = RoundedCornerShape(50.dp),
-            modifier = Modifier
-                .fillMaxWidth(0.8f)
-                .padding(20.dp, 100.dp, 20.dp, 100.dp)
-                .height(50.dp)
+        Box(
+            modifier = Modifier.fillMaxWidth(),
+            contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = "VAMOS A TU INVENTARIO",
-                color = Color.White,
-                style = MaterialTheme.typography.bodyLarge
+            Image(
+                painter = painterResource(id = R.drawable.ic_launcher_background),
+                contentDescription = "Cuenta creada",
+                modifier = Modifier
+                    .fillMaxWidth(0.6f)
+                    .aspectRatio(1f)
+                    .padding(vertical = 10.dp)
             )
+        }
+        Spacer(modifier = Modifier.weight(1f))
+        Box(
+            modifier = Modifier.fillMaxWidth(),
+            contentAlignment = Alignment.Center
+        ) {
+            Button(
+                onClick = onInventoryClick,
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF8AA1A)),
+                shape = RoundedCornerShape(50.dp),
+                modifier = Modifier
+                    .fillMaxWidth(0.8f)
+                    .padding(20.dp, 100.dp, 20.dp, 100.dp)
+                    .height(50.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp)
+            ) {
+                Text(
+                    text = "VAMOS A TU INVENTARIO",
+                    color = Color.White,
+                    style = MaterialTheme.typography.bodyLarge,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
         }
         Spacer(modifier = Modifier.height(32.dp))
     }
@@ -148,6 +133,10 @@ fun SuccessScreen(onInventoryClick: () -> Unit, navController: NavController? = 
             onAddBranchClick = {
                 menuVisible = false
                 navController.navigate("add_branch")
+            },
+            onAddStaffClick = {
+                menuVisible = false
+                navController.navigate("add_staff")
             }
         )
     }
