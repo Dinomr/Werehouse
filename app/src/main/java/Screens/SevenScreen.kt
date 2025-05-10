@@ -56,7 +56,7 @@ class RegisterActivity : ComponentActivity() {
 }
 
 @Composable
-fun CreateAccountScreen(navController: NavController) {
+fun CreateAccountScreen(navController: NavController, onSuccess: (() -> Unit)? = null) {
     val context = LocalContext.current
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
@@ -188,7 +188,7 @@ fun CreateAccountScreen(navController: NavController) {
             Spacer(modifier = Modifier.height(16.dp))
             Button(
                 onClick = {
-                    navController.navigate("success")
+                    onSuccess?.invoke() ?: navController.navigate("success")
                 },
                 modifier = Modifier
                     .fillMaxWidth()

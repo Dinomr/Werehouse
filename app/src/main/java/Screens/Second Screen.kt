@@ -56,20 +56,53 @@ import com.example.wherehouse.ui.theme.WherehouseTheme
 import androidx.compose.ui.res.painterResource
 import com.example.wherehouse.Encabezado
 import com.example.wherehouse.R
-
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.navigation.NavController
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 
 @Composable
-fun SuccessScreen(onInventoryClick: () -> Unit) {
+fun SuccessScreen(onInventoryClick: () -> Unit, navController: NavController? = null) {
+    var menuVisible by remember { mutableStateOf(false) }
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
+            .background(Color.White),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // 🔹 Encabezado reutilizable Encabezado()
-
+        // Encabezado igual que en el resto de la app
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color.Black)
+                .systemBarsPadding()
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 30.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Menu,
+                    contentDescription = "Menú",
+                    modifier = Modifier.size(40.dp).clickable { menuVisible = true },
+                    tint = Color.White
+                )
+                Icon(
+                    imageVector = Icons.Default.AccountCircle,
+                    contentDescription = "Cuenta",
+                    modifier = Modifier.size(40.dp).clickable {
+                        navController?.navigate("login")
+                    },
+                    tint = Color.Gray
+                )
+            }
+        }
         Spacer(modifier = Modifier.height(32.dp))
-
         Text(
             text = "Se ha creado la cuenta con éxito",
             style = MaterialTheme.typography.headlineLarge,
@@ -77,9 +110,7 @@ fun SuccessScreen(onInventoryClick: () -> Unit) {
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(50.dp,50.dp,50.dp,50.dp)
         )
-
         Spacer(modifier = Modifier.height(32.dp))
-
         Image(
             painter = painterResource(id = R.drawable.ic_launcher_background),
             contentDescription = "Cuenta creada",
@@ -88,9 +119,7 @@ fun SuccessScreen(onInventoryClick: () -> Unit) {
                 .aspectRatio(1f)
                 .padding(vertical = 10.dp)
         )
-
         Spacer(modifier = Modifier.weight(1f))
-
         Button(
             onClick = onInventoryClick,
             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF8AA1A)),
@@ -106,14 +135,28 @@ fun SuccessScreen(onInventoryClick: () -> Unit) {
                 style = MaterialTheme.typography.bodyLarge
             )
         }
-
         Spacer(modifier = Modifier.height(32.dp))
+    }
+    if (menuVisible && navController != null) {
+        Screens.HamburgerMenu(
+            visible = true,
+            onDismiss = { menuVisible = false },
+            onInventarioClick = {
+                menuVisible = false
+                navController.popBackStack("main", false)
+            },
+            onAddBranchClick = {
+                menuVisible = false
+                navController.navigate("add_branch")
+            }
+        )
     }
 }
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun SecondScreen() {
+    val navController = androidx.navigation.compose.rememberNavController()
     Encabezado()
-    SuccessScreen(onInventoryClick = {})
+    SuccessScreen(onInventoryClick = {}, navController = navController)
 }

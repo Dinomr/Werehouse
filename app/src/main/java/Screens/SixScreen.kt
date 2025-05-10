@@ -207,6 +207,18 @@ fun SixScreen() {
     val navController = rememberNavController()
     NavHost(navController = navController, startDestination = "login") {
         composable("login") { LoginScreen(navController) }
-        composable("crear_cuenta") { com.example.wherehouse.screens.CreateAccountScreen(navController) }
+        composable("crear_cuenta") {
+            com.example.wherehouse.screens.CreateAccountScreen(
+                navController = navController,
+                onSuccess = { navController.navigate("success") }
+            )
+        }
+        composable("success") {
+            Screens.SuccessScreen(onInventoryClick = {
+                navController.navigate("main") {
+                    popUpTo(0) { inclusive = true }
+                }
+            })
+        }
     }
 }

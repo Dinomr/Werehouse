@@ -48,9 +48,9 @@ fun ProductDetailScreen(navController: NavController, productoId: String) {
         imageUri = uri
     }
     Box(modifier = Modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
                 .background(Color.White)
         ) {
             // Encabezado igual que FourScreen
@@ -59,14 +59,14 @@ fun ProductDetailScreen(navController: NavController, productoId: String) {
                     .fillMaxWidth()
                     .background(Color.Black)
                     .systemBarsPadding()
-            ) {
-                Row(
+    ) {
+        Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 30.dp, vertical = 8.dp),
                     horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Icon(
+        ) {
+            Icon(
                         imageVector = Icons.Default.Menu,
                         contentDescription = "Menú",
                         modifier = Modifier
@@ -87,8 +87,8 @@ fun ProductDetailScreen(navController: NavController, productoId: String) {
             Text(
                 text = "Detalle del producto",
                 style = MaterialTheme.typography.displaySmall,
-                modifier = Modifier
-                    .fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
                     .padding(top = 16.dp, bottom = 8.dp),
                 textAlign = TextAlign.Center
             )
@@ -168,9 +168,9 @@ fun ProductDetailScreen(navController: NavController, productoId: String) {
                     )
                 )
                 Spacer(modifier = Modifier.height(10.dp))
-                OutlinedTextField(
-                    value = precioCompra,
-                    onValueChange = { precioCompra = it },
+                    OutlinedTextField(
+                        value = precioCompra,
+                        onValueChange = { precioCompra = it },
                     label = { Text("Precio de compra", color = Color.Black) },
                     leadingIcon = { Text("$", color = Color.Black) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -190,9 +190,9 @@ fun ProductDetailScreen(navController: NavController, productoId: String) {
                     )
                 )
                 Spacer(modifier = Modifier.height(10.dp))
-                OutlinedTextField(
-                    value = precioVenta,
-                    onValueChange = { precioVenta = it },
+                    OutlinedTextField(
+                        value = precioVenta,
+                        onValueChange = { precioVenta = it },
                     label = { Text("Precio de venta", color = Color.Black) },
                     leadingIcon = { Text("$", color = Color.Black) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),

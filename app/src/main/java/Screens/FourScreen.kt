@@ -95,8 +95,8 @@ fun AddProductScreen(navController: NavController, onNavigateToMain: () -> Unit)
                     .systemBarsPadding()
             ) {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
                         .padding(horizontal = 30.dp, vertical = 8.dp),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
@@ -118,21 +118,21 @@ fun AddProductScreen(navController: NavController, onNavigateToMain: () -> Unit)
                     )
                 }
             }
-            Text(
+        Text(
                 text = "Añadir producto",
-                style = MaterialTheme.typography.displaySmall,
-                modifier = Modifier
-                    .fillMaxWidth()
+            style = MaterialTheme.typography.displaySmall,
+            modifier = Modifier
+                .fillMaxWidth()
                     .padding(top = 16.dp, bottom = 8.dp),
-                textAlign = TextAlign.Center
-            )
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
+            textAlign = TextAlign.Center
+        )
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
                     .padding(horizontal = 16.dp)
                     .background(Color(0xFFF8AA1A), shape = RoundedCornerShape(20.dp))
-                    .padding(16.dp)
-            ) {
+                .padding(16.dp)
+        ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center
@@ -146,7 +146,7 @@ fun AddProductScreen(navController: NavController, onNavigateToMain: () -> Unit)
                         contentAlignment = Alignment.Center
                     ) {
                         if (imageUri != null) {
-                            Image(
+            Image(
                                 painter = rememberAsyncImagePainter(imageUri),
                                 contentDescription = "Imagen seleccionada",
                                 modifier = Modifier.fillMaxSize()
@@ -161,12 +161,12 @@ fun AddProductScreen(navController: NavController, onNavigateToMain: () -> Unit)
                     }
                 }
                 Spacer(modifier = Modifier.height(20.dp))
-                OutlinedTextField(
+            OutlinedTextField(
                     value = nombre,
                     onValueChange = { nombre = it },
                     label = { Text("Nombre del producto", color = Color.Black) },
-                    modifier = Modifier
-                        .fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
                         .background(Color.White, RoundedCornerShape(8.dp))
                         .height(56.dp),
                     textStyle = TextStyle(color = Color.Black, textAlign = TextAlign.Start, fontSize = MaterialTheme.typography.bodyMedium.fontSize),
@@ -179,13 +179,13 @@ fun AddProductScreen(navController: NavController, onNavigateToMain: () -> Unit)
                         focusedTextColor = Color.Black,
                         unfocusedTextColor = Color.Black
                     )
-                )
+            )
                 Spacer(modifier = Modifier.height(10.dp))
-                OutlinedTextField(
+            OutlinedTextField(
                     value = cantidad,
                     onValueChange = { cantidad = it },
                     label = { Text("Cantidad", color = Color.Black) },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(Color.White, RoundedCornerShape(8.dp))
@@ -330,8 +330,8 @@ fun SucursalDropdown() {
             options.forEach { option ->
                 DropdownMenuItem(
                     onClick = {
-                        selectedOption = option
-                        expanded = false
+                    selectedOption = option
+                    expanded = false
                     },
                     text = { Text(option, color = Color.Black) }
                 )

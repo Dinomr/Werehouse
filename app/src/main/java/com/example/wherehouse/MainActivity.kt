@@ -99,6 +99,13 @@ class MainActivity : ComponentActivity() {
                     composable("add_branch") {
                         com.example.wherehouse.screens.AddBranchScreen(navController)
                     }
+                    composable("success") {
+                        Screens.SuccessScreen(onInventoryClick = {
+                            navController.navigate("main") {
+                                popUpTo(0) { inclusive = true }
+                            }
+                        })
+                    }
                 }
             }
         }
@@ -288,7 +295,8 @@ fun MainScreen(navController: NavController) {
         ) {
             ExposedDropdownMenuBox(
                 expanded = productoExpanded,
-                onExpandedChange = { productoExpanded = !productoExpanded }
+                onExpandedChange = { productoExpanded = !productoExpanded },
+                modifier = Modifier.weight(1f)
             ) {
                 OutlinedTextField(
                     value = productoFiltro,
@@ -296,9 +304,7 @@ fun MainScreen(navController: NavController) {
                     label = { Text("Filtrar por producto", color = Color.Black, style = MaterialTheme.typography.bodySmall) },
                     textStyle = MaterialTheme.typography.bodySmall.copy(color = Color.Black),
                     singleLine = true,
-                    modifier = Modifier
-                        .menuAnchor()
-                        .weight(1f)
+                    modifier = Modifier.menuAnchor().fillMaxWidth()
                 )
                 ExposedDropdownMenu(
                     expanded = productoExpanded,
@@ -318,7 +324,8 @@ fun MainScreen(navController: NavController) {
             }
             ExposedDropdownMenuBox(
                 expanded = sucursalExpanded,
-                onExpandedChange = { sucursalExpanded = !sucursalExpanded }
+                onExpandedChange = { sucursalExpanded = !sucursalExpanded },
+                modifier = Modifier.weight(1f)
             ) {
                 OutlinedTextField(
                     value = sucursalFiltro,
@@ -326,9 +333,7 @@ fun MainScreen(navController: NavController) {
                     label = { Text("Filtrar por sucursal", color = Color.Black, style = MaterialTheme.typography.bodySmall) },
                     textStyle = MaterialTheme.typography.bodySmall.copy(color = Color.Black),
                     singleLine = true,
-                    modifier = Modifier
-                        .menuAnchor()
-                        .weight(1f)
+                    modifier = Modifier.menuAnchor().fillMaxWidth()
                 )
                 ExposedDropdownMenu(
                     expanded = sucursalExpanded,
