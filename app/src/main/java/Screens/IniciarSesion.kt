@@ -83,7 +83,7 @@ fun LoginScreen(navController: NavController) {
             contentAlignment = Alignment.Center
         ) {
             Image(
-                painter = painterResource(id = R.drawable.ic_launcher_foreground),
+                painter = painterResource(id = R.drawable.iniciar_sesion),
                 contentDescription = "Imagen de login",
                 modifier = Modifier.size(90.dp)
             )
