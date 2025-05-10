@@ -46,7 +46,7 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
-    implementation("androidx.navigation:navigation-compose:2.5.0-alpha01")
+    implementation("androidx.navigation:navigation-compose:2.9.0-rc01")
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
