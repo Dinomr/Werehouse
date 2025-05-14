@@ -14,12 +14,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.wherehouse.R
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.firestore.ktx.firestore
@@ -30,59 +28,39 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EditarStaffScreen(navController: NavController) {
+fun GestionSucursalesScreen(navController: NavController) {
     val auth = Firebase.auth
     val db = Firebase.firestore
     val currentUser = auth.currentUser
     val context = LocalContext.current
     var menuVisible by remember { mutableStateOf(false) }
-    var staffList by remember { mutableStateOf(listOf<Pair<String, Map<String, Any>>>()) }
-    var selectedStaffId by remember { mutableStateOf("") }
+    var sucursales by remember { mutableStateOf(listOf<Pair<String, String>>()) } // (id, nombre)
+    var selectedSucursalId by remember { mutableStateOf("") }
+    var nombreSucursal by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
 
-    // Campos editables
-    var nombre by remember { mutableStateOf("") }
-    var staffId by remember { mutableStateOf("") }
-    var sucursalId by remember { mutableStateOf("") }
-    var store by remember { mutableStateOf("") }
-    var sucursales by remember { mutableStateOf(listOf<Pair<String, String>>()) }
-
     if (currentUser == null) {
-        // Si no está autenticado, mostrar mensaje y redirigir
         LaunchedEffect(Unit) {
-            Toast.makeText(context, "Debes iniciar sesión para editar staff", Toast.LENGTH_LONG).show()
+            Toast.makeText(context, "Debes iniciar sesión para gestionar sucursales", Toast.LENGTH_LONG).show()
             navController.navigate("login")
         }
         return
     }
 
-    // Cargar staff del usuario
-    LaunchedEffect(currentUser) {
-        if (currentUser != null) {
-            db.collection("staff").whereEqualTo("usuarioId", currentUser.uid).get()
-                .addOnSuccessListener { result ->
-                    staffList = result.documents.map { it.id to (it.data ?: emptyMap()) }
-                }
-        }
-    }
     // Cargar sucursales del usuario
     LaunchedEffect(currentUser) {
-        if (currentUser != null) {
-            db.collection("sucursales").whereEqualTo("usuarioId", currentUser.uid).get()
-                .addOnSuccessListener { result ->
-                    sucursales = result.documents.map { it.id to (it.getString("nombre") ?: "") }
-                }
-        }
+        db.collection("sucursales").whereEqualTo("usuarioId", currentUser.uid).get()
+            .addOnSuccessListener { result ->
+                sucursales = result.documents.map { it.id to (it.getString("nombre") ?: "") }
+            }
     }
-    // Cuando selecciona un staff, cargar sus datos
-    LaunchedEffect(selectedStaffId) {
-        val staff = staffList.find { it.first == selectedStaffId }?.second
-        if (staff != null) {
-            nombre = staff["nombre"] as? String ?: ""
-            staffId = staff["staffId"] as? String ?: ""
-            sucursalId = staff["sucursalId"] as? String ?: ""
-            store = staff["store"] as? String ?: ""
+    // Cuando selecciona una sucursal, cargar su nombre
+    LaunchedEffect(selectedSucursalId) {
+        val sucursal = sucursales.find { it.first == selectedSucursalId }
+        if (sucursal != null) {
+            nombreSucursal = sucursal.second
         }
     }
     Column(
@@ -118,15 +96,15 @@ fun EditarStaffScreen(navController: NavController) {
             }
         }
         Text(
-            text = "Editar STAFF",
+            text = "Gestionar sucursales",
             style = MaterialTheme.typography.displaySmall,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 16.dp, bottom = 8.dp),
             textAlign = TextAlign.Center
         )
-        // Lista de empleados
-        if (staffList.isNotEmpty()) {
+        // Lista de sucursales
+        if (sucursales.isNotEmpty()) {
             LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -134,18 +112,17 @@ fun EditarStaffScreen(navController: NavController) {
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(0.dp)
             ) {
-                items(staffList) { (id, staff) ->
-                    val nombreStaff = staff["nombre"] as? String ?: "(Sin nombre)"
+                items(sucursales) { (id, nombre) ->
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(20.dp))
                             .background(Color.White)
-                            .clickable { selectedStaffId = id }
+                            .clickable { selectedSucursalId = id }
                             .padding(16.dp)
                     ) {
                         Text(
-                            text = nombreStaff,
+                            text = nombre,
                             color = Color.Black,
                             style = MaterialTheme.typography.bodyLarge,
                             modifier = Modifier.fillMaxWidth(),
@@ -157,7 +134,7 @@ fun EditarStaffScreen(navController: NavController) {
             }
         }
         // Formulario de edición
-        if (selectedStaffId.isNotEmpty()) {
+        if (selectedSucursalId.isNotEmpty()) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -165,9 +142,9 @@ fun EditarStaffScreen(navController: NavController) {
                     .padding(16.dp)
             ) {
                 OutlinedTextField(
-                    value = nombre,
-                    onValueChange = { nombre = it },
-                    label = { Text("Nombre de la persona *", color = Color.Black) },
+                    value = nombreSucursal,
+                    onValueChange = { nombreSucursal = it },
+                    label = { Text("Nombre de la sucursal *", color = Color.Black) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(Color.White, RoundedCornerShape(8.dp))
@@ -183,79 +160,18 @@ fun EditarStaffScreen(navController: NavController) {
                         unfocusedTextColor = Color.Black
                     )
                 )
-                Spacer(modifier = Modifier.height(10.dp))
-                OutlinedTextField(
-                    value = staffId,
-                    onValueChange = { staffId = it },
-                    label = { Text("ID del staff *", color = Color.Black) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color.White, RoundedCornerShape(8.dp))
-                        .height(56.dp),
-                    textStyle = TextStyle(color = Color.Black, textAlign = TextAlign.Start, fontSize = MaterialTheme.typography.bodyMedium.fontSize),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color.Transparent,
-                        unfocusedBorderColor = Color.Transparent,
-                        cursorColor = Color.Black,
-                        focusedLabelColor = Color.Black,
-                        unfocusedLabelColor = Color.Black,
-                        focusedTextColor = Color.Black,
-                        unfocusedTextColor = Color.Black
-                    )
-                )
-                Spacer(modifier = Modifier.height(10.dp))
-                // Dropdown para sucursal (estilo consistente)
-                var sucursalExpanded by remember { mutableStateOf(false) }
-                Box(modifier = Modifier.fillMaxWidth()) {
-                    OutlinedButton(
-                        onClick = { sucursalExpanded = true },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(Color.White, RoundedCornerShape(50)),
-                        shape = RoundedCornerShape(50),
-                        colors = ButtonDefaults.outlinedButtonColors(containerColor = Color.White)
-                    ) {
-                        Text(
-                            sucursales.find { it.first == sucursalId }?.second ?: "¿A qué sucursal pertenece?",
-                            color = Color.Black,
-                            modifier = Modifier.fillMaxWidth(),
-                            textAlign = TextAlign.Center
-                        )
-                    }
-                    DropdownMenu(
-                        expanded = sucursalExpanded,
-                        onDismissRequest = { sucursalExpanded = false },
-                        modifier = Modifier.background(Color.White)
-                    ) {
-                        sucursales.forEach { (id, nombreSucursal) ->
-                            DropdownMenuItem(
-                                onClick = {
-                                    sucursalId = id
-                                    sucursalExpanded = false
-                                },
-                                text = { Text(nombreSucursal, color = Color.Black) }
-                            )
-                        }
-                    }
-                }
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(
                     onClick = {
-                        if (nombre.isBlank() || staffId.isBlank()) {
-                            Toast.makeText(context, "Completa los campos obligatorios", Toast.LENGTH_SHORT).show()
+                        if (nombreSucursal.isBlank()) {
+                            Toast.makeText(context, "Completa el nombre de la sucursal", Toast.LENGTH_SHORT).show()
                             return@Button
                         }
                         isLoading = true
-                        val staff = hashMapOf(
-                            "nombre" to nombre,
-                            "staffId" to staffId,
-                            "sucursalId" to sucursalId,
-                            "usuarioId" to (currentUser?.uid ?: "")
-                        )
-                        db.collection("staff").document(selectedStaffId).set(staff)
+                        db.collection("sucursales").document(selectedSucursalId).update("nombre", nombreSucursal)
                             .addOnSuccessListener {
                                 isLoading = false
-                                Toast.makeText(context, "Staff actualizado", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "Sucursal actualizada", Toast.LENGTH_SHORT).show()
                             }
                             .addOnFailureListener { e ->
                                 isLoading = false
@@ -295,16 +211,17 @@ fun EditarStaffScreen(navController: NavController) {
                 menuVisible = false
                 navController.navigate("add_branch")
             },
-            onGestionSucursalesClick = {
-                menuVisible = false
-                navController.navigate("gestion_sucursales")
-            },
             onAddStaffClick = {
                 menuVisible = false
                 navController.navigate("add_staff")
             },
             onEditStaffClick = {
-                menuVisible = false // Ya está en editar staff
+                menuVisible = false
+                navController.navigate("editar_staff")
+            },
+            onGestionSucursalesClick = {
+                menuVisible = false
+                navController.navigate("gestion_sucursales")
             },
             onLogoutClick = {
                 menuVisible = false

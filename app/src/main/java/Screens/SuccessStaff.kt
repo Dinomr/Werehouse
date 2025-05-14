@@ -135,6 +135,10 @@ fun SuccessStaffScreen(onInventoryClick: () -> Unit, navController: NavControlle
                 menuVisible = false
                 navController.navigate("add_branch")
             },
+            onGestionSucursalesClick = {
+                menuVisible = false
+                navController.navigate("gestion_sucursales")
+            },
             onAddStaffClick = {
                 menuVisible = false
                 navController.navigate("add_staff")

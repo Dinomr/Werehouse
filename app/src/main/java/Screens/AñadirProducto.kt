@@ -381,6 +381,10 @@ fun AddProductScreen(navController: NavController, onNavigateToMain: () -> Unit)
                     menuVisible = false
                     navController.navigate("add_branch")
                 },
+                onGestionSucursalesClick = {
+                    menuVisible = false
+                    navController.navigate("gestion_sucursales")
+                },
                 onAddStaffClick = { onAddStaffClick = null },
                 onEditStaffClick = { onAddStaffClick = null },
                 onLogoutClick = {
@@ -441,6 +445,7 @@ fun HamburgerMenu(
     onDismiss: () -> Unit,
     onInventarioClick: () -> Unit,
     onAddBranchClick: () -> Unit,
+    onGestionSucursalesClick: () -> Unit,
     onAddStaffClick: (() -> Unit)?,
     onEditStaffClick: (() -> Unit)?,
     onLogoutClick: (() -> Unit)? = null
@@ -495,6 +500,7 @@ fun HamburgerMenu(
                 Spacer(modifier = Modifier.height(8.dp))
                 AñadirProducto(text = "Inventario", onClick = onInventarioClick)
                 AñadirProducto(text = "Añadir sucursal", onClick = onAddBranchClick)
+                AñadirProducto(text = "Gestionar sucursales", onClick = onGestionSucursalesClick)
                 AñadirProducto(text = "Añadir staff", onClick = { onAddStaffClick?.invoke() })
                 AñadirProducto(text = "Administrar staff", onClick = { onEditStaffClick?.invoke() })
                 Spacer(modifier = Modifier.weight(1f))

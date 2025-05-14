@@ -91,28 +91,49 @@ import com.google.firebase.firestore.QuerySnapshot
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.CollectionReference
 import androidx.compose.ui.platform.LocalContext
+import android.content.Intent
 
 @OptIn(ExperimentalMaterial3Api::class)
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val auth = Firebase.auth
-        if (auth.currentUser == null) {
-            // Usuario no autenticado, redirigir a login
-            val intent = android.content.Intent(this, Screens.LoginActivity::class.java)
-            startActivity(intent)
-            finish()
-            return
-        }
+        enableEdgeToEdge()
         setContent {
             WherehouseTheme {
                 val navController = rememberNavController()
+                val auth = Firebase.auth
+                
+                // Verificar sesión al inicio
+                LaunchedEffect(Unit) {
+                    if (auth.currentUser == null) {
+                        navController.navigate("login") {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
+                }
+
                 NavHost(navController = navController, startDestination = "main") {
                     composable("main") {
-                        MainScreen(navController)
+                        if (auth.currentUser == null) {
+                            LaunchedEffect(Unit) {
+                                navController.navigate("login") {
+                                    popUpTo(0) { inclusive = true }
+                                }
+                            }
+                        } else {
+                            MainScreen(navController)
+                        }
                     }
                     composable("add_product") {
-                        AddProductScreen(navController = navController, onNavigateToMain = {})
+                        if (auth.currentUser == null) {
+                            LaunchedEffect(Unit) {
+                                navController.navigate("login") {
+                                    popUpTo(0) { inclusive = true }
+                                }
+                            }
+                        } else {
+                            AddProductScreen(navController = navController, onNavigateToMain = {})
+                        }
                     }
                     composable("login") {
                         Screens.LoginScreen(navController)
@@ -121,42 +142,42 @@ class MainActivity : ComponentActivity() {
                         com.example.wherehouse.screens.CreateAccountScreen(navController)
                     }
                     composable("detalle_producto/{productoId}") { backStackEntry ->
-                        val productoId = backStackEntry.arguments?.getString("productoId") ?: ""
-                        com.example.wherehouse.ProductDetailScreen(navController, productoId)
+                        if (auth.currentUser == null) {
+                            LaunchedEffect(Unit) {
+                                navController.navigate("login") {
+                                    popUpTo(0) { inclusive = true }
+                                }
+                            }
+                        } else {
+                            val productoId = backStackEntry.arguments?.getString("productoId") ?: ""
+                            com.example.wherehouse.ProductDetailScreen(navController, productoId)
+                        }
                     }
                     composable("add_branch") {
-                        com.example.wherehouse.screens.AddBranchScreen(navController)
-                    }
-                    composable("success") {
-                        Screens.SuccessScreen(onInventoryClick = {
-                            navController.navigate("main") {
-                                popUpTo(0) { inclusive = true }
+                        if (auth.currentUser == null) {
+                            LaunchedEffect(Unit) {
+                                navController.navigate("login") {
+                                    popUpTo(0) { inclusive = true }
+                                }
                             }
-                        })
-                    }
-                    composable("add_staff") {
-                        AddStaffScreen(navController)
-                    }
-                    composable("success_staff") {
-                        SuccessStaffScreen(onInventoryClick = {
-                            navController.navigate("main") {
-                                popUpTo(0) { inclusive = true }
-                            }
-                        }, navController = navController)
-                    }
-                    composable("success_sucursal") {
-                        SuccessSucursalScreen(onInventoryClick = {
-                            navController.navigate("main") {
-                                popUpTo(0) { inclusive = true }
-                            }
-                        }, navController = navController)
-                    }
-                    composable("editar_staff") {
-                        Screens.EditarStaffScreen(navController)
+                        } else {
+                            com.example.wherehouse.screens.AddBranchScreen(navController)
+                        }
                     }
                     composable("gestion_masiva?esIncremento={esIncremento}") { backStackEntry ->
-                        val esIncremento = backStackEntry.arguments?.getString("esIncremento")?.toBoolean() ?: true
-                        Screens.GestionMasivaScreen(navController, esIncremento)
+                        if (auth.currentUser == null) {
+                            LaunchedEffect(Unit) {
+                                navController.navigate("login") {
+                                    popUpTo(0) { inclusive = true }
+                                }
+                            }
+                        } else {
+                            val esIncremento = backStackEntry.arguments?.getString("esIncremento")?.toBoolean() ?: true
+                            Screens.GestionMasivaScreen(navController, esIncremento)
+                        }
+                    }
+                    composable("gestion_sucursales") {
+                        Screens.GestionSucursalesScreen(navController)
                     }
                 }
             }
@@ -648,6 +669,10 @@ fun MainScreen(navController: NavController) {
             onAddBranchClick = {
                 menuVisible = false
                 navController.navigate("add_branch")
+            },
+            onGestionSucursalesClick = {
+                menuVisible = false
+                navController.navigate("gestion_sucursales")
             },
             onAddStaffClick = {
                 menuVisible = false

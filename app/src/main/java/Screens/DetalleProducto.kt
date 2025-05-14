@@ -322,11 +322,11 @@ fun ProductDetailScreen(navController: NavController, productoId: String) {
                     if (isLoading) {
                         CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.Black)
                     } else {
-                        Text(
-                            text = "ACTUALIZAR PRODUCTO",
-                            color = Color.Black,
-                            style = MaterialTheme.typography.bodyLarge
-                        )
+                    Text(
+                        text = "ACTUALIZAR PRODUCTO",
+                        color = Color.Black,
+                        style = MaterialTheme.typography.bodyLarge
+                    )
                     }
                 }
             }
@@ -342,6 +342,10 @@ fun ProductDetailScreen(navController: NavController, productoId: String) {
                 onAddBranchClick = {
                     menuVisible = false
                     navController.navigate("add_branch")
+                },
+                onGestionSucursalesClick = {
+                    menuVisible = false
+                    navController.navigate("gestion_sucursales")
                 },
                 onAddStaffClick = {
                     menuVisible = false

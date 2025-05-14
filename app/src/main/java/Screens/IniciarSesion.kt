@@ -249,6 +249,10 @@ fun LoginScreen(navController: NavController) {
                 menuVisible = false
                 navController.navigate("add_branch")
             },
+            onGestionSucursalesClick = {
+                menuVisible = false
+                navController.navigate("gestion_sucursales")
+            },
             onAddStaffClick = {
                 menuVisible = false
                 navController.navigate("add_staff")

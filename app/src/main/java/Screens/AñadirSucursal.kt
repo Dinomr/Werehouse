@@ -170,26 +170,26 @@ fun AddBranchScreen(navController: NavController) {
                 )
                 Spacer(modifier = Modifier.height(10.dp))
                 if (sucursales.isNotEmpty()) {
-                    OutlinedTextField(
-                        value = responsiblePerson,
-                        onValueChange = { responsiblePerson = it },
-                        label = { Text("Persona a cargo", color = Color.Black) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(Color.White, RoundedCornerShape(8.dp))
-                            .height(56.dp),
-                        textStyle = MaterialTheme.typography.bodyLarge.copy(color = Color.Black),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Color.Transparent,
-                            unfocusedBorderColor = Color.Transparent,
-                            cursorColor = Color.Black,
-                            focusedLabelColor = Color.Black,
-                            unfocusedLabelColor = Color.Black,
-                            focusedTextColor = Color.Black,
-                            unfocusedTextColor = Color.Black
-                        )
+                OutlinedTextField(
+                    value = responsiblePerson,
+                    onValueChange = { responsiblePerson = it },
+                    label = { Text("Persona a cargo", color = Color.Black) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color.White, RoundedCornerShape(8.dp))
+                        .height(56.dp),
+                    textStyle = MaterialTheme.typography.bodyLarge.copy(color = Color.Black),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color.Transparent,
+                        unfocusedBorderColor = Color.Transparent,
+                        cursorColor = Color.Black,
+                        focusedLabelColor = Color.Black,
+                        unfocusedLabelColor = Color.Black,
+                        focusedTextColor = Color.Black,
+                        unfocusedTextColor = Color.Black
                     )
-                    Spacer(modifier = Modifier.height(16.dp))
+                )
+                Spacer(modifier = Modifier.height(16.dp))
                 }
                 Button(
                     onClick = {
@@ -239,8 +239,8 @@ fun AddBranchScreen(navController: NavController) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable {
-                        navController.navigate("add_staff")
-                    }
+                    navController.navigate("add_staff")
+                }
             )
         }
         if (menuVisible) {
@@ -254,6 +254,10 @@ fun AddBranchScreen(navController: NavController) {
                 onAddBranchClick = {
                     menuVisible = false
                     // Ya estás en la pantalla de sucursal, así que no navegas a ningún lado
+                },
+                onGestionSucursalesClick = {
+                    menuVisible = false
+                    navController.navigate("gestion_sucursales")
                 },
                 onAddStaffClick = {
                     menuVisible = false

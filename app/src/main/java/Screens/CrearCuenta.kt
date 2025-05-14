@@ -228,7 +228,7 @@ fun CreateAccountScreen(navController: NavController, onSuccess: (() -> Unit)? =
                                 isLoading = false
                                 if (task.isSuccessful) {
                                     Toast.makeText(context, "Cuenta creada exitosamente", Toast.LENGTH_SHORT).show()
-                                    onSuccess?.invoke() ?: navController.navigate("success")
+                    onSuccess?.invoke() ?: navController.navigate("success")
                                 } else {
                                     Toast.makeText(context, "Error: ${task.exception?.message}", Toast.LENGTH_SHORT).show()
                                 }
@@ -250,11 +250,11 @@ fun CreateAccountScreen(navController: NavController, onSuccess: (() -> Unit)? =
                         color = Color.Black
                     )
                 } else {
-                    Text(
-                        text = "CREAR CUENTA",
-                        color = Color.Black,
-                        style = MaterialTheme.typography.bodyLarge
-                    )
+                Text(
+                    text = "CREAR CUENTA",
+                    color = Color.Black,
+                    style = MaterialTheme.typography.bodyLarge
+                )
                 }
             }
             Spacer(modifier = Modifier.height(32.dp))
@@ -287,6 +287,10 @@ fun CreateAccountScreen(navController: NavController, onSuccess: (() -> Unit)? =
             onAddBranchClick = {
                 menuVisible = false
                 navController.navigate("add_branch")
+            },
+            onGestionSucursalesClick = {
+                menuVisible = false
+                navController.navigate("gestion_sucursales")
             },
             onAddStaffClick = {
                 menuVisible = false
