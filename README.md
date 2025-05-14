@@ -13,7 +13,7 @@ Es una aplicación de gestión de inventario diseñada para empresas que necesit
 La documentación completa se encuentra en el directorio **docs/**, incluyendo:
 
 - [Ideas del proyecto](docs/ideas.md)
-- [Diseño de la interfaz de usuario](docs/images)
+- [Diseño de la interfaz de usuario](docs/ui.md)
 - [Funcionalidades](docs/funcionalidades.md)
 - [Modelo de Base de Datos](Data_base)
 
