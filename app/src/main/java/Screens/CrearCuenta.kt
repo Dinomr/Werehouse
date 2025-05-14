@@ -35,11 +35,25 @@ import androidx.compose.ui.res.painterResource
 import com.example.wherehouse.R
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.filled.Menu
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
+import android.widget.Toast
+import android.app.Activity
+import android.content.Intent
+import com.example.wherehouse.MainActivity
 
 @OptIn(ExperimentalMaterial3Api::class)
 class RegisterActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val auth = Firebase.auth
+        if (auth.currentUser != null) {
+            // Usuario ya autenticado, redirigir
+            startActivity(Intent(this, MainActivity::class.java))
+            finish()
+            return
+        }
         setContent {
             WherehouseTheme {
                 Surface(color = MaterialTheme.colorScheme.background) {
@@ -56,10 +70,23 @@ class RegisterActivity : ComponentActivity() {
 @Composable
 fun CreateAccountScreen(navController: NavController, onSuccess: (() -> Unit)? = null) {
     val context = LocalContext.current
+    val auth = Firebase.auth
+    val currentUser = auth.currentUser
+    // Redirección si ya está logueado
+    LaunchedEffect(currentUser) {
+        if (currentUser != null) {
+            val intent = Intent(context, com.example.wherehouse.MainActivity::class.java)
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(intent)
+            if (context is Activity) (context as Activity).finish()
+        }
+    }
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var menuVisible by remember { mutableStateOf(false) }
+    var isLoading by remember { mutableStateOf(false) }
+    
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -194,19 +221,41 @@ fun CreateAccountScreen(navController: NavController, onSuccess: (() -> Unit)? =
             Spacer(modifier = Modifier.height(16.dp))
             Button(
                 onClick = {
-                    onSuccess?.invoke() ?: navController.navigate("success")
+                    if (email.isNotEmpty() && password.isNotEmpty()) {
+                        isLoading = true
+                        auth.createUserWithEmailAndPassword(email, password)
+                            .addOnCompleteListener { task ->
+                                isLoading = false
+                                if (task.isSuccessful) {
+                                    Toast.makeText(context, "Cuenta creada exitosamente", Toast.LENGTH_SHORT).show()
+                                    onSuccess?.invoke() ?: navController.navigate("success")
+                                } else {
+                                    Toast.makeText(context, "Error: ${task.exception?.message}", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                    } else {
+                        Toast.makeText(context, "Por favor completa todos los campos", Toast.LENGTH_SHORT).show()
+                    }
                 },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(48.dp)
                     .clip(RoundedCornerShape(50)),
-                colors = ButtonDefaults.buttonColors(containerColor = Color.White)
+                colors = ButtonDefaults.buttonColors(containerColor = Color.White),
+                enabled = !isLoading
             ) {
-                Text(
-                    text = "CREAR CUENTA",
-                    color = Color.Black,
-                    style = MaterialTheme.typography.bodyLarge
-                )
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = Color.Black
+                    )
+                } else {
+                    Text(
+                        text = "CREAR CUENTA",
+                        color = Color.Black,
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
             }
             Spacer(modifier = Modifier.height(32.dp))
             Row(
@@ -242,6 +291,10 @@ fun CreateAccountScreen(navController: NavController, onSuccess: (() -> Unit)? =
             onAddStaffClick = {
                 menuVisible = false
                 navController.navigate("add_staff")
+            },
+            onEditStaffClick = {
+                menuVisible = false
+                navController.navigate("editar_staff")
             }
         )
     }

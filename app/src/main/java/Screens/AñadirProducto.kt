@@ -44,6 +44,12 @@ import com.example.wherehouse.MainActivity
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import androidx.compose.foundation.BorderStroke
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.storage.ktx.storage
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 
 class AddProductActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -60,6 +66,17 @@ class AddProductActivity : ComponentActivity() {
 @Composable
 fun AddProductScreen(navController: NavController, onNavigateToMain: () -> Unit) {
     val context = LocalContext.current
+    val auth = Firebase.auth
+    val db = Firebase.firestore
+    val storage = Firebase.storage
+    val currentUser = auth.currentUser
+    if (currentUser == null) {
+        LaunchedEffect(Unit) {
+            Toast.makeText(context, "Debes iniciar sesión para añadir productos", Toast.LENGTH_LONG).show()
+            navController.navigate("login")
+        }
+        return
+    }
     var imageUri by remember { mutableStateOf<Uri?>(null) }
     var nombre by remember { mutableStateOf("") }
     var cantidad by remember { mutableStateOf("") }
@@ -67,9 +84,21 @@ fun AddProductScreen(navController: NavController, onNavigateToMain: () -> Unit)
     var precioVenta by remember { mutableStateOf("") }
     var descripcion by remember { mutableStateOf("") }
     var menuVisible by remember { mutableStateOf(false) }
+    var sucursalId by remember { mutableStateOf("") }
+    var isLoading by remember { mutableStateOf(false) }
     var onAddStaffClick: (() -> Unit)? = null
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         imageUri = uri
+    }
+    var sucursales by remember { mutableStateOf(listOf<Pair<String, String>>()) }
+    // Cargar sucursales del usuario
+    LaunchedEffect(currentUser) {
+        if (currentUser != null) {
+            db.collection("sucursales").whereEqualTo("usuarioId", currentUser.uid).get()
+                .addOnSuccessListener { result ->
+                    sucursales = result.documents.map { it.id to (it.getString("nombre") ?: "") }
+                }
+        }
     }
     fun navigateToMain() {
         val intent = Intent(context, MainActivity::class.java)
@@ -83,7 +112,7 @@ fun AddProductScreen(navController: NavController, onNavigateToMain: () -> Unit)
                 .fillMaxSize()
                 .background(Color.White)
         ) {
-            // Encabezado con icono de menú y barra de estado negra
+            // Encabezado con icono de menú y barra de estado negro
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -266,10 +295,61 @@ fun AddProductScreen(navController: NavController, onNavigateToMain: () -> Unit)
                     )
                 )
                 Spacer(modifier = Modifier.height(12.dp))
-                SucursalDropdown()
-                Spacer(modifier = Modifier.height(16.dp))
+                if (sucursales.isNotEmpty()) {
+                    SucursalDropdownProducto(db = db, currentUser = currentUser) { id -> sucursalId = id }
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
                 Button(
-                    onClick = { /* Acción de crear nuevo producto */ },
+                    onClick = {
+                        if (currentUser == null) {
+                            Toast.makeText(context, "Debes iniciar sesión", Toast.LENGTH_SHORT).show()
+                            return@Button
+                        }
+                        if (nombre.isBlank() || cantidad.isBlank() || precioCompra.isBlank() || precioVenta.isBlank() || descripcion.isBlank() || (sucursales.isNotEmpty() && sucursalId.isBlank())) {
+                            Toast.makeText(context, "Completa todos los campos", Toast.LENGTH_SHORT).show()
+                            return@Button
+                        }
+                        isLoading = true
+                        fun guardarProducto(urlImagen: String?) {
+                            val producto = hashMapOf(
+                                "nombre" to nombre,
+                                "cantidad" to cantidad.toIntOrNull(),
+                                "precioCompra" to precioCompra.toDoubleOrNull(),
+                                "precioVenta" to precioVenta.toDoubleOrNull(),
+                                "descripcion" to descripcion,
+                                "usuarioId" to currentUser.uid,
+                                "sucursalId" to if (sucursales.isNotEmpty()) sucursalId else null,
+                                "imagenUrl" to (urlImagen ?: "")
+                            )
+                            db.collection("productos").add(producto)
+                                .addOnSuccessListener {
+                                    isLoading = false
+                                    Toast.makeText(context, "Producto creado", Toast.LENGTH_SHORT).show()
+                                    navController.popBackStack("main", false)
+                                }
+                                .addOnFailureListener { e ->
+                                    isLoading = false
+                                    Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                                }
+                        }
+                        if (imageUri != null) {
+                            val ref = storage.reference.child("productos/${currentUser.uid}/${System.currentTimeMillis()}.jpg")
+                            ref.putFile(imageUri!!)
+                                .continueWithTask { task ->
+                                    if (!task.isSuccessful) throw task.exception ?: Exception("Error al subir imagen")
+                                    ref.downloadUrl
+                                }
+                                .addOnSuccessListener { uri ->
+                                    guardarProducto(uri.toString())
+                                }
+                                .addOnFailureListener { e ->
+                                    isLoading = false
+                                    Toast.makeText(context, "Error al subir imagen: ${e.message}", Toast.LENGTH_SHORT).show()
+                                }
+                        } else {
+                            guardarProducto(null)
+                        }
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(48.dp)
@@ -277,11 +357,15 @@ fun AddProductScreen(navController: NavController, onNavigateToMain: () -> Unit)
                     colors = ButtonDefaults.buttonColors(containerColor = Color.White),
                     border = BorderStroke(2.dp, Color.Black)
                 ) {
-                    Text(
-                        text = "CREAR NUEVO PRODUCTO",
-                        color = Color.Black,
-                        style = MaterialTheme.typography.bodyLarge
-                    )
+                    if (isLoading) {
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.Black)
+                    } else {
+                        Text(
+                            text = "CREAR NUEVO PRODUCTO",
+                            color = Color.Black,
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
                 }
             }
         }
@@ -297,17 +381,30 @@ fun AddProductScreen(navController: NavController, onNavigateToMain: () -> Unit)
                     menuVisible = false
                     navController.navigate("add_branch")
                 },
-                onAddStaffClick = { onAddStaffClick = null }
+                onAddStaffClick = { onAddStaffClick = null },
+                onEditStaffClick = { onAddStaffClick = null },
+                onLogoutClick = {
+                    // Implementa la lógica para cerrar sesión
+                }
             )
         }
     }
 }
 
 @Composable
-fun SucursalDropdown() {
+fun SucursalDropdownProducto(db: com.google.firebase.firestore.FirebaseFirestore, currentUser: com.google.firebase.auth.FirebaseUser?, onSucursalSelected: (String) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
     var selectedOption by remember { mutableStateOf("¿A qué sucursal pertenece?") }
-    val options = listOf("Sucursal 1", "Sucursal 2", "Sucursal 3")
+    var sucursales by remember { mutableStateOf(listOf<Pair<String, String>>()) } // (id, nombre)
+    // Cargar sucursales del usuario
+    LaunchedEffect(currentUser) {
+        if (currentUser != null) {
+            db.collection("sucursales").whereEqualTo("usuarioId", currentUser.uid).get()
+                .addOnSuccessListener { result ->
+                    sucursales = result.documents.map { it.id to (it.getString("nombre") ?: "") }
+                }
+        }
+    }
     Box(modifier = Modifier.fillMaxWidth()) {
         OutlinedButton(
             onClick = { expanded = true },
@@ -324,13 +421,14 @@ fun SucursalDropdown() {
             onDismissRequest = { expanded = false },
             modifier = Modifier.background(Color.White)
         ) {
-            options.forEach { option ->
+            sucursales.forEach { (id, nombre) ->
                 DropdownMenuItem(
                     onClick = {
-                    selectedOption = option
-                    expanded = false
+                        selectedOption = nombre
+                        expanded = false
+                        onSucursalSelected(id)
                     },
-                    text = { Text(option, color = Color.Black) }
+                    text = { Text(nombre, color = Color.Black) }
                 )
             }
         }
@@ -343,14 +441,22 @@ fun HamburgerMenu(
     onDismiss: () -> Unit,
     onInventarioClick: () -> Unit,
     onAddBranchClick: () -> Unit,
-    onAddStaffClick: (() -> Unit)?
+    onAddStaffClick: (() -> Unit)?,
+    onEditStaffClick: (() -> Unit)?,
+    onLogoutClick: (() -> Unit)? = null
 ) {
     val density = LocalDensity.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val auth = Firebase.auth
+    val isLoggedIn = auth.currentUser != null
     AnimatedVisibility(
         visible = visible,
         enter = fadeIn() + slideInVertically(initialOffsetY = { with(density) { -300.dp.roundToPx() } }),
         exit = fadeOut() + slideOutVertically(targetOffsetY = { with(density) { -300.dp.roundToPx() } })
     ) {
+        LaunchedEffect(visible) {
+            if (visible) keyboardController?.hide()
+        }
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -389,7 +495,20 @@ fun HamburgerMenu(
                 Spacer(modifier = Modifier.height(8.dp))
                 AñadirProducto(text = "Inventario", onClick = onInventarioClick)
                 AñadirProducto(text = "Añadir sucursal", onClick = onAddBranchClick)
-                AñadirProducto(text = "Añadir staff", onClick = { onDismiss(); onAddStaffClick?.invoke() })
+                AñadirProducto(text = "Añadir staff", onClick = { onAddStaffClick?.invoke() })
+                AñadirProducto(text = "Administrar staff", onClick = { onEditStaffClick?.invoke() })
+                Spacer(modifier = Modifier.weight(1f))
+                if (isLoggedIn && onLogoutClick != null) {
+                    Button(
+                        onClick = onLogoutClick,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE53935))
+                    ) {
+                        Text("Cerrar sesión", color = Color.White)
+                    }
+                }
             }
         }
     }

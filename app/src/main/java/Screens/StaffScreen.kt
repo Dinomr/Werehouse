@@ -25,13 +25,33 @@ import com.example.wherehouse.ui.theme.WherehouseTheme
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import androidx.compose.foundation.BorderStroke
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
+import com.google.firebase.firestore.ktx.firestore
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 
 @Composable
 fun AddStaffScreen(navController: NavController) {
+    val auth = Firebase.auth
+    val db = Firebase.firestore
+    val currentUser = auth.currentUser
+    val context = LocalContext.current
     var personName by remember { mutableStateOf("") }
     var staffId by remember { mutableStateOf("") }
     var store by remember { mutableStateOf("") }
     var menuVisible by remember { mutableStateOf(false) }
+    var sucursalId by remember { mutableStateOf("") }
+    var isLoading by remember { mutableStateOf(false) }
+    // SucursalDropdown para seleccionar sucursal
+    SucursalDropdown(db = db, currentUser = currentUser) { id -> sucursalId = id }
+    if (currentUser == null) {
+        LaunchedEffect(Unit) {
+            Toast.makeText(context, "Debes iniciar sesión para añadir staff", Toast.LENGTH_LONG).show()
+            navController.navigate("login")
+        }
+        return
+    }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -102,7 +122,7 @@ fun AddStaffScreen(navController: NavController) {
             OutlinedTextField(
                 value = personName,
                 onValueChange = { personName = it },
-                label = { Text("Nombre de la persona", color = Color.Black) },
+                label = { Text("Nombre de la persona *", color = Color.Black) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(Color.White, RoundedCornerShape(8.dp))
@@ -122,7 +142,7 @@ fun AddStaffScreen(navController: NavController) {
             OutlinedTextField(
                 value = staffId,
                 onValueChange = { staffId = it },
-                label = { Text("ID", color = Color.Black) },
+                label = { Text("ID *", color = Color.Black) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(Color.White, RoundedCornerShape(8.dp))
@@ -160,7 +180,34 @@ fun AddStaffScreen(navController: NavController) {
             )
             Spacer(modifier = Modifier.height(16.dp))
             Button(
-                onClick = { navController.navigate("success_staff") },
+                onClick = {
+                    if (currentUser == null) {
+                        Toast.makeText(context, "Debes iniciar sesión", Toast.LENGTH_SHORT).show()
+                        return@Button
+                    }
+                    if (personName.isBlank() || staffId.isBlank()) {
+                        Toast.makeText(context, "Completa los campos obligatorios", Toast.LENGTH_SHORT).show()
+                        return@Button
+                    }
+                    isLoading = true
+                    val staff = hashMapOf(
+                        "nombre" to personName,
+                        "staffId" to staffId,
+                        "sucursalId" to sucursalId,
+                        "usuarioId" to currentUser.uid,
+                        "store" to store
+                    )
+                    db.collection("staff").add(staff)
+                        .addOnSuccessListener {
+                            isLoading = false
+                            Toast.makeText(context, "Staff añadido", Toast.LENGTH_SHORT).show()
+                            navController.navigate("success_staff")
+                        }
+                        .addOnFailureListener { e ->
+                            isLoading = false
+                            Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                        }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(48.dp)
@@ -168,11 +215,15 @@ fun AddStaffScreen(navController: NavController) {
                 colors = ButtonDefaults.buttonColors(containerColor = Color.White),
                 border = BorderStroke(2.dp, Color.Black)
             ) {
-                Text(
-                    text = "AÑADIR STAFF",
-                    color = Color.Black,
-                    style = MaterialTheme.typography.bodyLarge
-                )
+                if (isLoading) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.Black)
+                } else {
+                    Text(
+                        text = "AÑADIR STAFF",
+                        color = Color.Black,
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
             }
         }
         Spacer(modifier = Modifier.height(24.dp))
@@ -201,8 +252,63 @@ fun AddStaffScreen(navController: NavController) {
             onAddStaffClick = {
                 menuVisible = false
                 navController.navigate("add_staff")
+            },
+            onEditStaffClick = {
+                menuVisible = false
+                navController.navigate("editar_staff")
+            },
+            onLogoutClick = {
+                menuVisible = false
+                Firebase.auth.signOut()
+                navController.navigate("login") {
+                    popUpTo("main") { inclusive = true }
+                }
             }
         )
+    }
+}
+
+@Composable
+fun SucursalDropdown(db: com.google.firebase.firestore.FirebaseFirestore, currentUser: com.google.firebase.auth.FirebaseUser?, onSucursalSelected: (String) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    var selectedOption by remember { mutableStateOf("¿A qué sucursal pertenece?") }
+    var sucursales by remember { mutableStateOf(listOf<Pair<String, String>>()) } // (id, nombre)
+    // Cargar sucursales del usuario
+    LaunchedEffect(currentUser) {
+        if (currentUser != null) {
+            db.collection("sucursales").whereEqualTo("usuarioId", currentUser.uid).get()
+                .addOnSuccessListener { result ->
+                    sucursales = result.documents.map { it.id to (it.getString("nombre") ?: "") }
+                }
+        }
+    }
+    Box(modifier = Modifier.fillMaxWidth()) {
+        OutlinedButton(
+            onClick = { expanded = true },
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color.White, RoundedCornerShape(50)),
+            shape = RoundedCornerShape(50),
+            colors = ButtonDefaults.outlinedButtonColors(containerColor = Color.White)
+        ) {
+            Text(selectedOption, color = Color.Black, modifier = Modifier.fillMaxWidth())
+        }
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.background(Color.White)
+        ) {
+            sucursales.forEach { (id, nombre) ->
+                DropdownMenuItem(
+                    onClick = {
+                        selectedOption = nombre
+                        expanded = false
+                        onSucursalSelected(id)
+                    },
+                    text = { Text(nombre, color = Color.Black) }
+                )
+            }
+        }
     }
 }
 

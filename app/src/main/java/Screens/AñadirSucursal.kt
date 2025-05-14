@@ -21,13 +21,42 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.material.icons.filled.Menu
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
+import com.google.firebase.firestore.ktx.firestore
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 
 @Composable
 fun AddBranchScreen(navController: NavController) {
+    val auth = Firebase.auth
+    val context = LocalContext.current
+    val currentUser = auth.currentUser
     var branchName by remember { mutableStateOf("") }
     var address by remember { mutableStateOf("") }
     var responsiblePerson by remember { mutableStateOf("") }
     var menuVisible by remember { mutableStateOf(false) }
+    var sucursales by remember { mutableStateOf(listOf<Pair<String, String>>()) }
+    // Cargar sucursales del usuario
+    LaunchedEffect(currentUser) {
+        if (currentUser != null) {
+            val db = Firebase.firestore
+            db.collection("sucursales").whereEqualTo("usuarioId", currentUser.uid).get()
+                .addOnSuccessListener { result ->
+                    sucursales = result.documents.map { it.id to (it.getString("nombre") ?: "") }
+                }
+        }
+    }
+    if (currentUser == null) {
+        // Si no está autenticado, mostrar mensaje y redirigir
+        LaunchedEffect(Unit) {
+            Toast.makeText(context, "Debes iniciar sesión para añadir sucursales", Toast.LENGTH_LONG).show()
+            navController.navigate("login")
+        }
+        return
+    }
+    val userId = currentUser.uid
+    val db = Firebase.firestore
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
@@ -140,28 +169,53 @@ fun AddBranchScreen(navController: NavController) {
                     )
                 )
                 Spacer(modifier = Modifier.height(10.dp))
-                OutlinedTextField(
-                    value = responsiblePerson,
-                    onValueChange = { responsiblePerson = it },
-                    label = { Text("Persona a cargo", color = Color.Black) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color.White, RoundedCornerShape(8.dp))
-                        .height(56.dp),
-                    textStyle = MaterialTheme.typography.bodyLarge.copy(color = Color.Black),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color.Transparent,
-                        unfocusedBorderColor = Color.Transparent,
-                        cursorColor = Color.Black,
-                        focusedLabelColor = Color.Black,
-                        unfocusedLabelColor = Color.Black,
-                        focusedTextColor = Color.Black,
-                        unfocusedTextColor = Color.Black
+                if (sucursales.isNotEmpty()) {
+                    OutlinedTextField(
+                        value = responsiblePerson,
+                        onValueChange = { responsiblePerson = it },
+                        label = { Text("Persona a cargo", color = Color.Black) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color.White, RoundedCornerShape(8.dp))
+                            .height(56.dp),
+                        textStyle = MaterialTheme.typography.bodyLarge.copy(color = Color.Black),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color.Transparent,
+                            unfocusedBorderColor = Color.Transparent,
+                            cursorColor = Color.Black,
+                            focusedLabelColor = Color.Black,
+                            unfocusedLabelColor = Color.Black,
+                            focusedTextColor = Color.Black,
+                            unfocusedTextColor = Color.Black
+                        )
                     )
-                )
-                Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
                 Button(
-                    onClick = { navController.navigate("success_sucursal") },
+                    onClick = {
+                        if (branchName.isNotEmpty() && address.isNotEmpty() && (sucursales.isEmpty() || responsiblePerson.isNotEmpty())) {
+                            val branch = hashMapOf(
+                                "nombre" to branchName,
+                                "direccion" to address,
+                                "responsable" to if (sucursales.isNotEmpty()) responsiblePerson else null,
+                                "usuarioId" to userId
+                            )
+                            db.collection("sucursales").add(branch)
+                                .addOnSuccessListener {
+                                    Toast.makeText(context, "Sucursal añadida", Toast.LENGTH_SHORT).show()
+                                    if (sucursales.isEmpty()) {
+                                        navController.navigate("add_staff")
+                                    } else {
+                                        navController.navigate("success_sucursal")
+                                    }
+                                }
+                                .addOnFailureListener { e ->
+                                    Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                                }
+                        } else {
+                            Toast.makeText(context, "Completa todos los campos", Toast.LENGTH_SHORT).show()
+                        }
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(48.dp)
@@ -178,13 +232,15 @@ fun AddBranchScreen(navController: NavController) {
             }
             Spacer(modifier = Modifier.height(24.dp))
             Text(
-                text = "¿NO TIENE PERSONAL A UN RESPONSABLE?",
+                text = "¿NO TIENE PERSONAL A CARGO?",
                 color = Color.Black,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.clickable {
-                    navController.navigate("add_staff")
-                }
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        navController.navigate("add_staff")
+                    }
             )
         }
         if (menuVisible) {
@@ -202,6 +258,17 @@ fun AddBranchScreen(navController: NavController) {
                 onAddStaffClick = {
                     menuVisible = false
                     navController.navigate("add_staff")
+                },
+                onEditStaffClick = {
+                    menuVisible = false
+                    navController.navigate("editar_staff")
+                },
+                onLogoutClick = {
+                    menuVisible = false
+                    Firebase.auth.signOut()
+                    navController.navigate("login") {
+                        popUpTo("main") { inclusive = true }
+                    }
                 }
             )
         }

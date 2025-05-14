@@ -29,6 +29,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -38,9 +39,11 @@ import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -57,6 +60,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.UiMode
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.app.NotificationCompat.Style
 import com.example.wherehouse.ui.theme.WherehouseTheme
 import androidx.navigation.compose.NavHost
@@ -74,11 +78,32 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import Screens.AddStaffScreen
 import Screens.SuccessStaffScreen
 import Screens.SuccessSucursalScreen
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
+import com.google.firebase.firestore.ktx.firestore
+import android.widget.Toast
+import com.google.firebase.firestore.ListenerRegistration
+import androidx.compose.runtime.DisposableEffect
+import coil.compose.rememberAsyncImagePainter
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.firestore.EventListener
+import com.google.firebase.firestore.QuerySnapshot
+import com.google.firebase.firestore.FirebaseFirestoreException
+import com.google.firebase.firestore.CollectionReference
+import androidx.compose.ui.platform.LocalContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val auth = Firebase.auth
+        if (auth.currentUser == null) {
+            // Usuario no autenticado, redirigir a login
+            val intent = android.content.Intent(this, Screens.LoginActivity::class.java)
+            startActivity(intent)
+            finish()
+            return
+        }
         setContent {
             WherehouseTheme {
                 val navController = rememberNavController()
@@ -125,6 +150,13 @@ class MainActivity : ComponentActivity() {
                                 popUpTo(0) { inclusive = true }
                             }
                         }, navController = navController)
+                    }
+                    composable("editar_staff") {
+                        Screens.EditarStaffScreen(navController)
+                    }
+                    composable("gestion_masiva?esIncremento={esIncremento}") { backStackEntry ->
+                        val esIncremento = backStackEntry.arguments?.getString("esIncremento")?.toBoolean() ?: true
+                        Screens.GestionMasivaScreen(navController, esIncremento)
                     }
                 }
             }
@@ -258,16 +290,51 @@ fun Mytext (text: String,color: Color,style: TextStyle){
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(navController: NavController) {
+    val auth = Firebase.auth
+    val db = Firebase.firestore
+    val currentUser = auth.currentUser
+    val context = LocalContext.current
+    if (currentUser == null) {
+        // Si no está autenticado, mostrar mensaje y redirigir
+        LaunchedEffect(Unit) {
+            Toast.makeText(context, "Debes iniciar sesión para acceder al inventario", Toast.LENGTH_LONG).show()
+            navController.navigate("login")
+        }
+        return
+    }
     var menuVisible by remember { mutableStateOf(false) }
-    val productos = listOf(
-        "Producto 1", "Producto 2", "Producto 3", "Producto 4",
-        "Producto 5", "Producto 6", "Producto 7", "Producto 8", "Producto 9", "Producto 10",
-        "Producto 11", "Producto 12", "Producto 13", "Producto 14"
-    ) // Ahora hay 14 productos
+    var productos by remember { mutableStateOf(listOf<Map<String, Any>>()) }
+    var sucursales by remember { mutableStateOf(listOf<Pair<String, String>>()) } // (id, nombre)
     var productoFiltro by remember { mutableStateOf("") }
     var productoExpanded by remember { mutableStateOf(false) }
     var sucursalFiltro by remember { mutableStateOf("") }
     var sucursalExpanded by remember { mutableStateOf(false) }
+    var sucursalFiltroId by remember { mutableStateOf("") }
+    // Escuchar productos y sucursales en tiempo real
+    DisposableEffect(currentUser) {
+        var productosListener: ListenerRegistration? = null
+        var sucursalesListener: ListenerRegistration? = null
+        if (currentUser != null) {
+            productosListener = db.collection("productos").whereEqualTo("usuarioId", currentUser.uid)
+                .addSnapshotListener { snapshot, _ ->
+                    if (snapshot != null) {
+                        productos = snapshot.documents.map { it.data?.plus("id" to it.id) ?: emptyMap() }
+                    }
+                }
+            sucursalesListener = db.collection("sucursales").whereEqualTo("usuarioId", currentUser.uid)
+                .addSnapshotListener { snapshot, _ ->
+                    if (snapshot != null) {
+                        sucursales = snapshot.documents.map { it.id to (it.getString("nombre") ?: "") }
+                    }
+                }
+        }
+        onDispose {
+            productosListener?.remove()
+            sucursalesListener?.remove()
+        }
+    }
+    val hayProductos = productos.isNotEmpty()
+    val isLoggedIn = currentUser != null
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -302,7 +369,7 @@ fun MainScreen(navController: NavController) {
         }
         // Bienvenida
         Text(
-            text = "Bienvenid@",
+            text = if (isLoggedIn) "Bienvenid@" else "Debes iniciar sesión",
             color = Color.Black,
             style = MaterialTheme.typography.displayMedium,
             modifier = Modifier
@@ -310,144 +377,263 @@ fun MainScreen(navController: NavController) {
                 .padding(vertical = 16.dp, horizontal = 16.dp),
             textAlign = TextAlign.Center
         )
-        // Menús desplegables de filtro en un Row
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp, start = 16.dp, end = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            ExposedDropdownMenuBox(
-                expanded = productoExpanded,
-                onExpandedChange = { productoExpanded = !productoExpanded },
-                modifier = Modifier.weight(1f)
-            ) {
-                OutlinedTextField(
-                    value = productoFiltro,
-                    onValueChange = { productoFiltro = it },
-                    label = { Text("Filtrar por producto", color = Color.Black, style = MaterialTheme.typography.bodySmall) },
-                    textStyle = MaterialTheme.typography.bodySmall.copy(color = Color.Black),
-                    singleLine = true,
-                    modifier = Modifier.menuAnchor().fillMaxWidth()
-                )
-                ExposedDropdownMenu(
-                    expanded = productoExpanded,
-                    onDismissRequest = { productoExpanded = false }
-                ) {
-                    val productosFiltro = listOf("Producto 1", "Producto 2", "Producto 3")
-                    productosFiltro.filter { it.contains(productoFiltro, true) }.forEach { option ->
-                        DropdownMenuItem(
-                            onClick = {
-                                productoFiltro = option
-                                productoExpanded = false
-                            },
-                            text = { Text(option, style = MaterialTheme.typography.bodySmall, color = Color.Black) }
-                        )
-                    }
-                }
-            }
-            ExposedDropdownMenuBox(
-                expanded = sucursalExpanded,
-                onExpandedChange = { sucursalExpanded = !sucursalExpanded },
-                modifier = Modifier.weight(1f)
-            ) {
-                OutlinedTextField(
-                    value = sucursalFiltro,
-                    onValueChange = { sucursalFiltro = it },
-                    label = { Text("Filtrar por sucursal", color = Color.Black, style = MaterialTheme.typography.bodySmall) },
-                    textStyle = MaterialTheme.typography.bodySmall.copy(color = Color.Black),
-                    singleLine = true,
-                    modifier = Modifier.menuAnchor().fillMaxWidth()
-                )
-                ExposedDropdownMenu(
-                    expanded = sucursalExpanded,
-                    onDismissRequest = { sucursalExpanded = false }
-                ) {
-                    val sucursalesFiltro = listOf("Sucursal 1", "Sucursal 2", "Sucursal 3")
-                    sucursalesFiltro.filter { it.contains(sucursalFiltro, true) }.forEach { option ->
-                        DropdownMenuItem(
-                            onClick = {
-                                sucursalFiltro = option
-                                sucursalExpanded = false
-                            },
-                            text = { Text(option, style = MaterialTheme.typography.bodySmall, color = Color.Black) }
-                        )
-                    }
-                }
-            }
-        }
-        // Lista de productos
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            val productosFiltrados = if (productoFiltro.isBlank()) productos else productos.filter { it.contains(productoFiltro, ignoreCase = true) }
-            productosFiltrados.forEach { productoNombre ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(Color(0xFFF8AA1A))
-                        .padding(8.dp)
-                        .clickable { navController.navigate("detalle_producto/$productoNombre") },
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(56.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(Color.White),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.paisaje),
-                            contentDescription = "Imagen producto",
-                            tint = Color.Unspecified,
-                            modifier = Modifier.size(40.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(
-                        text = productoNombre,
-                        color = Color.Black,
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.weight(1f)
-                    )
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_launcher_foreground),
-                        contentDescription = "Flecha",
-                        modifier = Modifier.size(28.dp),
-                        tint = Color.Black
-                    )
-                }
-            }
-        }
-        // Botón agregar producto
-        Spacer(modifier = Modifier.height(16.dp))
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 24.dp, start = 16.dp, end = 16.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Button(
-                onClick = { navController.navigate("add_product") },
+        if (hayProductos) {
+            // Menús desplegables de filtro en un Row
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(48.dp)
-                    .clip(RoundedCornerShape(50)),
-                colors = ButtonDefaults.buttonColors(containerColor = Color.White),
-                border = BorderStroke(2.dp, Color.Black)
+                    .padding(bottom = 16.dp, start = 16.dp, end = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text(
-                    text = "AGREGAR PRODUCTO",
-                    color = Color.Black,
-                    style = MaterialTheme.typography.bodyLarge
-                )
+                ExposedDropdownMenuBox(
+                    expanded = productoExpanded,
+                    onExpandedChange = { productoExpanded = !productoExpanded },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    OutlinedTextField(
+                        value = productoFiltro,
+                        onValueChange = { productoFiltro = it },
+                        label = { Text("Filtrar por producto", color = Color.Black, style = MaterialTheme.typography.bodySmall) },
+                        textStyle = MaterialTheme.typography.bodySmall.copy(color = Color.Black),
+                        singleLine = true,
+                        modifier = Modifier.menuAnchor().fillMaxWidth().background(Color.White),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color.Black,
+                            unfocusedBorderColor = Color.Black,
+                            focusedTextColor = Color.Black,
+                            unfocusedTextColor = Color.Black,
+                            focusedLabelColor = Color.Black,
+                            unfocusedLabelColor = Color.Black,
+                            cursorColor = Color.Black
+                        )
+                    )
+                    ExposedDropdownMenu(
+                        expanded = productoExpanded,
+                        onDismissRequest = { productoExpanded = false },
+                        modifier = Modifier.background(Color.White)
+                    ) {
+                        productos.mapNotNull { it["nombre"] as? String }.distinct().filter { it.contains(productoFiltro, true) }.forEach { option ->
+                            DropdownMenuItem(
+                                onClick = {
+                                    productoFiltro = option
+                                    productoExpanded = false
+                                },
+                                text = { Text(option, style = MaterialTheme.typography.bodySmall, color = Color.Black) }
+                            )
+                        }
+                    }
+                }
+                ExposedDropdownMenuBox(
+                    expanded = sucursalExpanded,
+                    onExpandedChange = { sucursalExpanded = !sucursalExpanded },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    OutlinedTextField(
+                        value = sucursalFiltro,
+                        onValueChange = { sucursalFiltro = it },
+                        label = { Text("Filtrar por sucursal", color = Color.Black, style = MaterialTheme.typography.bodySmall) },
+                        textStyle = MaterialTheme.typography.bodySmall.copy(color = Color.Black),
+                        singleLine = true,
+                        modifier = Modifier.menuAnchor().fillMaxWidth().background(Color.White),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color.Black,
+                            unfocusedBorderColor = Color.Black,
+                            focusedTextColor = Color.Black,
+                            unfocusedTextColor = Color.Black,
+                            focusedLabelColor = Color.Black,
+                            unfocusedLabelColor = Color.Black,
+                            cursorColor = Color.Black
+                        )
+                    )
+                    ExposedDropdownMenu(
+                        expanded = sucursalExpanded,
+                        onDismissRequest = { sucursalExpanded = false },
+                        modifier = Modifier.background(Color.White)
+                    ) {
+                        sucursales.filter { it.second.contains(sucursalFiltro, true) }.forEach { (id, nombre) ->
+                            DropdownMenuItem(
+                                onClick = {
+                                    sucursalFiltro = nombre
+                                    sucursalFiltroId = id
+                                    sucursalExpanded = false
+                                },
+                                text = { Text(nombre, style = MaterialTheme.typography.bodySmall, color = Color.Black) }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        // Lista de productos filtrados
+        if (hayProductos) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                val productosFiltrados = productos.filter {
+                    (productoFiltro.isBlank() || (it["nombre"] as? String)?.contains(productoFiltro, ignoreCase = true) == true) &&
+                    (sucursalFiltroId.isBlank() || it["sucursalId"] == sucursalFiltroId)
+                }
+                productosFiltrados.forEach { producto ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(Color(0xFFF8AA1A))
+                            .padding(8.dp)
+                            .clickable { navController.navigate("detalle_producto/${producto["id"]}") },
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(56.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color.White),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            // Mostrar imagen si existe
+                            val imagenUrl = producto["imagenUrl"] as? String
+                            if (!imagenUrl.isNullOrBlank()) {
+                                androidx.compose.foundation.Image(
+                                    painter = rememberAsyncImagePainter(imagenUrl),
+                                    contentDescription = "Imagen producto",
+                                    modifier = Modifier.size(40.dp)
+                                )
+                            } else {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.paisaje),
+                                    contentDescription = "Imagen producto",
+                                    tint = Color.Unspecified,
+                                    modifier = Modifier.size(40.dp)
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = producto["nombre"] as? String ?: "",
+                                color = Color.Black,
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                            val sucursalNombre = sucursales.find { it.first == producto["sucursalId"] }?.second ?: ""
+                            if (sucursalNombre.isNotBlank()) {
+                                Text(
+                                    text = "Sucursal: $sucursalNombre",
+                                    color = Color.DarkGray,
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                        }
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text(
+                                text = "Cantidad: ${producto["cantidad"] ?: "-"}",
+                                color = Color.Black,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    }
+                }
+            }
+        } else {
+            Spacer(modifier = Modifier.weight(1f))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 48.dp, start = 64.dp, end = 64.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                val tieneSucursales = sucursales.isNotEmpty()
+                Button(
+                    onClick = {
+                        if (isLoggedIn) {
+                            if (tieneSucursales) navController.navigate("add_product")
+                            else navController.navigate("add_branch")
+                        } else {
+                            navController.navigate("login")
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(44.dp)
+                        .clip(RoundedCornerShape(50)),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.White),
+                    border = BorderStroke(2.dp, Color.Black)
+                ) {
+                    Text(
+                        text = if (isLoggedIn) (if (tieneSucursales) "AÑADIR PRODUCTO" else "CREAR SUCURSAL") else "INICIAR SESIÓN",
+                        color = Color.Black,
+                        style = MaterialTheme.typography.bodyLarge.copy(fontSize = 15.sp),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.weight(1f))
+        }
+        // Botones inferiores
+        if (hayProductos) {
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 24.dp, start = 16.dp, end = 16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Button(
+                    onClick = { navController.navigate("gestion_masiva?esIncremento=false") },
+                    modifier = Modifier
+                        .height(48.dp)
+                        .width(64.dp)
+                        .clip(RoundedCornerShape(50)),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE53935)), // Rojo
+                    contentPadding = PaddingValues(0.dp)
+                ) {
+                    Text(
+                        text = "-",
+                        color = Color.White,
+                        style = MaterialTheme.typography.displayMedium.copy(fontSize = 32.sp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(16.dp))
+                Button(
+                    onClick = { navController.navigate("add_product") },
+                    modifier = Modifier
+                        .height(48.dp)
+                        .width(180.dp)
+                        .clip(RoundedCornerShape(50)),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.White),
+                    border = BorderStroke(2.dp, Color.Black),
+                    contentPadding = PaddingValues(horizontal = 16.dp)
+                ) {
+                    Text(
+                        text = "AGREGAR PRODUCTO",
+                        color = Color.Black,
+                        style = MaterialTheme.typography.bodyLarge.copy(fontSize = 18.sp),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+                Spacer(modifier = Modifier.width(16.dp))
+                Button(
+                    onClick = { navController.navigate("gestion_masiva?esIncremento=true") },
+                    modifier = Modifier
+                        .height(48.dp)
+                        .width(64.dp)
+                        .clip(RoundedCornerShape(50)),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)), // Verde pastel
+                    contentPadding = PaddingValues(0.dp)
+                ) {
+                    Text(
+                        text = "+",
+                        color = Color.White,
+                        style = MaterialTheme.typography.displayMedium.copy(fontSize = 32.sp)
+                    )
+                }
             }
         }
     }
@@ -466,6 +652,17 @@ fun MainScreen(navController: NavController) {
             onAddStaffClick = {
                 menuVisible = false
                 navController.navigate("add_staff")
+            },
+            onEditStaffClick = {
+                menuVisible = false
+                navController.navigate("editar_staff")
+            },
+            onLogoutClick = {
+                menuVisible = false
+                Firebase.auth.signOut()
+                navController.navigate("login") {
+                    popUpTo("main") { inclusive = true }
+                }
             }
         )
     }

@@ -26,12 +26,29 @@ import coil.compose.rememberAsyncImagePainter
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.navigation.compose.rememberNavController
-import Screens.SucursalDropdown
+import Screens.SucursalDropdownProducto
 import Screens.HamburgerMenu
 import androidx.compose.foundation.BorderStroke
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.storage.ktx.storage
+import android.widget.Toast
 
 @Composable
 fun ProductDetailScreen(navController: NavController, productoId: String) {
+    val context = LocalContext.current
+    val auth = Firebase.auth
+    val db = Firebase.firestore
+    val storage = Firebase.storage
+    val currentUser = auth.currentUser
+    if (currentUser == null) {
+        LaunchedEffect(Unit) {
+            Toast.makeText(context, "Debes iniciar sesión para ver el detalle del producto", Toast.LENGTH_LONG).show()
+            navController.navigate("login")
+        }
+        return
+    }
     var imageUri by remember { mutableStateOf<android.net.Uri?>(null) }
     var nombre by remember { mutableStateOf("") }
     var cantidad by remember { mutableStateOf("") }
@@ -39,10 +56,22 @@ fun ProductDetailScreen(navController: NavController, productoId: String) {
     var precioVenta by remember { mutableStateOf("") }
     var descripcion by remember { mutableStateOf("") }
     var menuVisible by remember { mutableStateOf(false) }
-    var selectedSucursal by remember { mutableStateOf("¿A qué sucursal pertenece?") }
-    val context = LocalContext.current
+    var selectedSucursal by remember { mutableStateOf("") }
+    var imagenUrl by remember { mutableStateOf("") }
+    var isLoading by remember { mutableStateOf(false) }
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         imageUri = uri
+    }
+    LaunchedEffect(productoId) {
+        db.collection("productos").document(productoId).get().addOnSuccessListener { doc ->
+            nombre = doc.getString("nombre") ?: ""
+            cantidad = doc.getLong("cantidad")?.toString() ?: ""
+            precioCompra = doc.getDouble("precioCompra")?.toString() ?: ""
+            precioVenta = doc.getDouble("precioVenta")?.toString() ?: ""
+            descripcion = doc.getString("descripcion") ?: ""
+            selectedSucursal = doc.getString("sucursalId") ?: ""
+            imagenUrl = doc.getString("imagenUrl") ?: ""
+        }
     }
     Box(modifier = Modifier.fillMaxSize()) {
     Column(
@@ -230,10 +259,59 @@ fun ProductDetailScreen(navController: NavController, productoId: String) {
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 // Menú desplegable de sucursal
-                SucursalDropdown()
+                Screens.SucursalDropdownProducto(db = db, currentUser = currentUser, onSucursalSelected = {})
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(
-                    onClick = { /* Acción de actualizar producto */ },
+                    onClick = {
+                        if (currentUser == null) {
+                            Toast.makeText(context, "Debes iniciar sesión", Toast.LENGTH_SHORT).show()
+                            return@Button
+                        }
+                        if (nombre.isBlank() || cantidad.isBlank() || precioCompra.isBlank() || precioVenta.isBlank() || descripcion.isBlank() || selectedSucursal.isBlank()) {
+                            Toast.makeText(context, "Completa todos los campos", Toast.LENGTH_SHORT).show()
+                            return@Button
+                        }
+                        isLoading = true
+                        fun actualizarProducto(urlImagen: String?) {
+                            val producto = hashMapOf(
+                                "nombre" to nombre,
+                                "cantidad" to cantidad.toIntOrNull(),
+                                "precioCompra" to precioCompra.toDoubleOrNull(),
+                                "precioVenta" to precioVenta.toDoubleOrNull(),
+                                "descripcion" to descripcion,
+                                "usuarioId" to currentUser.uid,
+                                "sucursalId" to selectedSucursal,
+                                "imagenUrl" to (urlImagen ?: imagenUrl)
+                            )
+                            db.collection("productos").document(productoId).set(producto)
+                                .addOnSuccessListener {
+                                    isLoading = false
+                                    Toast.makeText(context, "Producto actualizado", Toast.LENGTH_SHORT).show()
+                                    navController.popBackStack()
+                                }
+                                .addOnFailureListener { e ->
+                                    isLoading = false
+                                    Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                                }
+                        }
+                        if (imageUri != null) {
+                            val ref = storage.reference.child("productos/${currentUser.uid}/${System.currentTimeMillis()}.jpg")
+                            ref.putFile(imageUri!!)
+                                .continueWithTask { task ->
+                                    if (!task.isSuccessful) throw task.exception ?: Exception("Error al subir imagen")
+                                    ref.downloadUrl
+                                }
+                                .addOnSuccessListener { uri ->
+                                    actualizarProducto(uri.toString())
+                                }
+                                .addOnFailureListener { e ->
+                                    isLoading = false
+                                    Toast.makeText(context, "Error al subir imagen: ${e.message}", Toast.LENGTH_SHORT).show()
+                                }
+                        } else {
+                            actualizarProducto(null)
+                        }
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(48.dp)
@@ -241,11 +319,15 @@ fun ProductDetailScreen(navController: NavController, productoId: String) {
                     colors = ButtonDefaults.buttonColors(containerColor = Color.White),
                     border = BorderStroke(2.dp, Color.Black)
                 ) {
-                    Text(
-                        text = "ACTUALIZAR PRODUCTO",
-                        color = Color.Black,
-                        style = MaterialTheme.typography.bodyLarge
-                    )
+                    if (isLoading) {
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.Black)
+                    } else {
+                        Text(
+                            text = "ACTUALIZAR PRODUCTO",
+                            color = Color.Black,
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
                 }
             }
         }
@@ -264,6 +346,10 @@ fun ProductDetailScreen(navController: NavController, productoId: String) {
                 onAddStaffClick = {
                     menuVisible = false
                     navController.navigate("add_staff")
+                },
+                onEditStaffClick = {
+                    menuVisible = false
+                    navController.navigate("editar_staff")
                 }
             )
         }

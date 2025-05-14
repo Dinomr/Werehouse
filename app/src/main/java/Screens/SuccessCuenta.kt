@@ -33,6 +33,8 @@ import androidx.navigation.NavController
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
 
 @Composable
 fun SuccessScreen(onInventoryClick: () -> Unit, navController: NavController? = null) {
@@ -106,6 +108,17 @@ fun SuccessScreen(onInventoryClick: () -> Unit, navController: NavController? = 
             onAddStaffClick = {
                 menuVisible = false
                 navController.navigate("add_staff")
+            },
+            onEditStaffClick = {
+                menuVisible = false
+                navController.navigate("editar_staff")
+            },
+            onLogoutClick = {
+                menuVisible = false
+                FirebaseAuth.getInstance().signOut()
+                navController.navigate("login") {
+                    popUpTo("main") { inclusive = true }
+                }
             }
         )
     }

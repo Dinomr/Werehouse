@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "48259223269",
+    "project_id": "werehouse-1c9e5",
+    "storage_bucket": "werehouse-1c9e5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:48259223269:android:42690291fd91a95b320e0c",
+        "android_client_info": {
+          "package_name": "com.example.wherehouse"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBEozKq8D1r9uvACnlEgEj1gVk0i80mcno"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
