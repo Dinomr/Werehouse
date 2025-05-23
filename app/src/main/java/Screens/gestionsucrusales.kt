@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -34,6 +35,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import coil.compose.rememberAsyncImagePainter
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
+import com.google.firebase.firestore.ListenerRegistration
+import androidx.compose.material3.AlertDialog
 
 @Composable
 fun GestionSucursalesScreen(navController: NavController) {
@@ -51,6 +55,13 @@ fun GestionSucursalesScreen(navController: NavController) {
     var imageUrl by remember { mutableStateOf<String?>(null) }
     var isLoading by remember { mutableStateOf(false) }
     var isDataLoaded by remember { mutableStateOf(false) }
+    var filtroNombre by remember { mutableStateOf("") }
+    var showSugerenciasNombre by remember { mutableStateOf(false) }
+    var staffList by remember { mutableStateOf(listOf<Pair<String, Map<String, Any>>>()) }
+    var showDialogConfirmacion by remember { mutableStateOf(false) }
+    var staffPendienteId by remember { mutableStateOf("") }
+    var sucursalAnteriorNombre by remember { mutableStateOf("") }
+    val nombresUnicos = sucursales.mapNotNull { it.second["nombre"] as? String }.distinct().filter { it.contains(filtroNombre, true) && filtroNombre.isNotBlank() }
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         imageUri = uri
     }
@@ -63,20 +74,38 @@ fun GestionSucursalesScreen(navController: NavController) {
         return
     }
 
-    // Cargar sucursales del usuario
-    LaunchedEffect(currentUser) {
-        isLoading = true
-        db.collection("sucursales").whereEqualTo("usuarioId", currentUser.uid).get()
-            .addOnSuccessListener { result ->
-                sucursales = result.documents.map { it.id to (it.data ?: emptyMap()) }
-                isDataLoaded = true
-                isLoading = false
-            }
-            .addOnFailureListener { e ->
-                Toast.makeText(context, "Error al cargar sucursales: ${e.message}", Toast.LENGTH_SHORT).show()
-                isLoading = false
-            }
+    // Reemplazo LaunchedEffect(currentUser) por un listener en tiempo real:
+    DisposableEffect(currentUser) {
+        var sucursalesListener: ListenerRegistration? = null
+        if (currentUser != null) {
+            sucursalesListener = db.collection("sucursales").whereEqualTo("usuarioId", currentUser.uid)
+                .addSnapshotListener { snapshot, _ ->
+                    if (snapshot != null) {
+                        sucursales = snapshot.documents.map { it.id to (it.data ?: emptyMap()) }
+                    }
+                }
+        }
+        onDispose {
+            sucursalesListener?.remove()
+        }
     }
+
+    // Listener en tiempo real para staff
+    DisposableEffect(currentUser) {
+        var staffListener: ListenerRegistration? = null
+        if (currentUser != null) {
+            staffListener = db.collection("staff").whereEqualTo("usuarioId", currentUser.uid)
+                .addSnapshotListener { snapshot, _ ->
+                    if (snapshot != null) {
+                        staffList = snapshot.documents.map { it.id to (it.data ?: emptyMap()) }
+                    }
+                }
+        }
+        onDispose {
+            staffListener?.remove()
+        }
+    }
+
     // Cuando selecciona una sucursal, cargar sus datos
     LaunchedEffect(selectedSucursalId) {
         if (selectedSucursalId.isNotEmpty()) {
@@ -121,49 +150,178 @@ fun GestionSucursalesScreen(navController: NavController) {
                 modifier = Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 8.dp),
                 textAlign = TextAlign.Center
             )
-            // Lista de sucursales
-            if (sucursales.isNotEmpty()) {
-                LazyColumn(
-                    modifier = Modifier.fillMaxWidth().weight(1f).padding(horizontal = 16.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(0.dp)
-                ) {
-                    items(sucursales) { (id, datos) ->
-                        val nombre = datos["nombre"] as? String ?: "(Sin nombre)"
-                        Column(
-                            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(Color.White)
-                                .clickable { selectedSucursalId = id }
-                                .padding(16.dp)
-                        ) {
-                            Text(
-                                text = nombre,
-                                color = Color.Black,
-                                style = MaterialTheme.typography.bodyLarge,
-                                modifier = Modifier.fillMaxWidth(),
-                                textAlign = TextAlign.Start
-                            )
-                            Divider(color = Color.Black, thickness = 1.dp, modifier = Modifier.fillMaxWidth())
+            // Filtro debajo del título
+            Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
+                OutlinedTextField(
+                    value = filtroNombre,
+                    onValueChange = {
+                        filtroNombre = it
+                        showSugerenciasNombre = it.isNotBlank()
+                    },
+                    label = { Text("Filtrar por nombre", color = Color.Black, style = MaterialTheme.typography.bodySmall) },
+                    textStyle = MaterialTheme.typography.bodySmall.copy(color = Color.Black),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth().background(Color.White),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color.Black,
+                        unfocusedBorderColor = Color.Black,
+                        focusedTextColor = Color.Black,
+                        unfocusedTextColor = Color.Black,
+                        focusedLabelColor = Color.Black,
+                        unfocusedLabelColor = Color.Black,
+                        cursorColor = Color.Black
+                    )
+                )
+                if (showSugerenciasNombre && nombresUnicos.isNotEmpty()) {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 48.dp)
+                            .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp)),
+                        colors = CardDefaults.cardColors(containerColor = Color.White)
+                    ) {
+                        Column {
+                            nombresUnicos.forEach { option ->
+                                Text(
+                                    text = option,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            filtroNombre = option
+                                            showSugerenciasNombre = false
+                                        }
+                                        .padding(12.dp),
+                                    color = Color.Black
+                                )
+                            }
                         }
                     }
                 }
             }
+            // Lista de sucursales
+            val sucursalesFiltradas = sucursales.filter {
+                filtroNombre.isBlank() || (it.second["nombre"] as? String)?.contains(filtroNombre, ignoreCase = true) == true
+            }
+            if (sucursalesFiltradas.isNotEmpty()) {
+                LazyColumn(
+                    modifier = Modifier.fillMaxWidth().weight(1f).padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(sucursalesFiltradas) { (id, datos) ->
+                        val nombre = datos["nombre"] as? String ?: "(Sin nombre)"
+                        val direccion = datos["direccion"] as? String ?: ""
+                        val encargado = datos["responsable"] as? String
+                        val imagenUrl = datos["imagenUrl"] as? String
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(20.dp))
+                                .background(Color(0xFFF8AA1A))
+                                .padding(8.dp)
+                                .clickable { selectedSucursalId = id },
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(56.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(Color.White),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (!imagenUrl.isNullOrBlank()) {
+                                    Image(
+                                        painter = rememberAsyncImagePainter(imagenUrl),
+                                        contentDescription = "Imagen sucursal",
+                                        modifier = Modifier.size(40.dp)
+                                    )
+                                } else {
+                                    Icon(
+                                        imageVector = Icons.Default.AccountCircle,
+                                        contentDescription = "Imagen sucursal",
+                                        tint = Color.Gray,
+                                        modifier = Modifier.size(40.dp)
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = nombre,
+                                    color = Color.Black,
+                                    style = MaterialTheme.typography.bodyLarge
+                                )
+                                if (direccion.isNotBlank()) {
+                                    Text(
+                                        text = direccion,
+                                        color = Color.DarkGray,
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                }
+                            }
+                            Column(horizontalAlignment = Alignment.End) {
+                                if (!encargado.isNullOrBlank()) {
+                                    Text(
+                                        text = encargado,
+                                        color = Color.Black,
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                } else {
+                                    Text(
+                                        text = "Sin encargado",
+                                        color = Color.Red,
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                Box(modifier = Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
+                    Text("No hay resultados", color = Color.Gray)
+                }
+            }
         }
-        // Formulario de edición montado encima
+        // Formulario de edición montado encima (penúltimo)
         if (selectedSucursalId.isNotEmpty() && sucursales.any { it.first == selectedSucursalId }) {
             Box(
                 Modifier.fillMaxSize().background(Color(0xCC000000)).clickable { selectedSucursalId = "" },
                 contentAlignment = Alignment.Center
             ) {
                 Column(
-                    modifier = Modifier.fillMaxWidth(0.95f).background(Color.White, shape = RoundedCornerShape(20.dp)).padding(16.dp)
+                    modifier = Modifier
+                        .fillMaxWidth(0.95f)
+                        .background(Color.White, shape = RoundedCornerShape(20.dp))
+                        .border(BorderStroke(2.dp, Color(0xFFF8AA1A)), RoundedCornerShape(20.dp))
+                        .padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
                             contentDescription = "Regresar",
                             modifier = Modifier.size(32.dp).clickable { selectedSucursalId = "" }
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Editar datos de la sucursal", style = MaterialTheme.typography.titleLarge)
+                        Text("Editar datos de la sucursal", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Eliminar sucursal",
+                            tint = Color.Red,
+                            modifier = Modifier.size(32.dp).clickable {
+                                isLoading = true
+                                db.collection("sucursales").document(selectedSucursalId).delete()
+                                    .addOnSuccessListener {
+                                        isLoading = false
+                                        Toast.makeText(context, "Sucursal eliminada", Toast.LENGTH_SHORT).show()
+                                        selectedSucursalId = ""
+                                    }
+                                    .addOnFailureListener { e ->
+                                        isLoading = false
+                                        Toast.makeText(context, "Error al eliminar sucursal: ${e.message}", Toast.LENGTH_SHORT).show()
+                                    }
+                            }
+                        )
                     }
                     Spacer(modifier = Modifier.height(16.dp))
                     Box(
@@ -227,22 +385,106 @@ fun GestionSucursalesScreen(navController: NavController) {
                         )
                     )
                     Spacer(modifier = Modifier.height(10.dp))
-                    OutlinedTextField(
-                        value = responsable,
-                        onValueChange = { responsable = it },
-                        label = { Text("Persona a cargo", color = Color.Black) },
-                        modifier = Modifier.fillMaxWidth().background(Color.White, RoundedCornerShape(8.dp)).height(56.dp),
-                        textStyle = TextStyle(color = Color.Black, textAlign = TextAlign.Start, fontSize = MaterialTheme.typography.bodyMedium.fontSize),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Color.Transparent,
-                            unfocusedBorderColor = Color.Transparent,
-                            cursorColor = Color.Black,
-                            focusedLabelColor = Color.Black,
-                            unfocusedLabelColor = Color.Black,
-                            focusedTextColor = Color.Black,
-                            unfocusedTextColor = Color.Black
+                    // Staff sin sucursal asignada o asignados a esta sucursal
+                    val staffSinSucursal = remember(staffList, selectedSucursalId) {
+                        staffList.filter {
+                            val sucursalStaff = it.second["sucursalId"] as? String
+                            sucursalStaff.isNullOrBlank() || sucursalStaff == selectedSucursalId
+                        }
+                    }
+                    var expandedStaff by remember { mutableStateOf(false) }
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        OutlinedButton(
+                            onClick = { expandedStaff = true },
+                            modifier = Modifier.fillMaxWidth().background(Color.White, RoundedCornerShape(50)),
+                            shape = RoundedCornerShape(50),
+                            colors = ButtonDefaults.outlinedButtonColors(containerColor = Color.White)
+                        ) {
+                            Text(
+                                if (responsable.isNotBlank()) responsable else "Selecciona persona a cargo",
+                                color = if (responsable.isNotBlank()) Color.Black else Color.Gray,
+                                modifier = Modifier.fillMaxWidth(),
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = expandedStaff,
+                            onDismissRequest = { expandedStaff = false },
+                            modifier = Modifier.background(Color.White)
+                        ) {
+                            staffList.forEach { (id, staff) ->
+                                val nombreStaff = staff["nombre"] as? String ?: "(Sin nombre)"
+                                val sucursalStaffId = staff["sucursalId"] as? String
+                                val sucursalStaffNombre = sucursales.find { it.first == sucursalStaffId }?.second
+                                val tieneSucursal = !sucursalStaffId.isNullOrBlank() && sucursalStaffId != selectedSucursalId
+                                DropdownMenuItem(
+                                    onClick = {
+                                        if (tieneSucursal) {
+                                            staffPendienteId = id
+                                            sucursalAnteriorNombre = sucursales.find { it.first == sucursalStaffId }?.second?.get("nombre") as? String ?: ""
+                                            showDialogConfirmacion = true
+                                        } else {
+                                            responsable = staff["nombre"] as? String ?: ""
+                                            expandedStaff = false
+                                        }
+                                    },
+                                    text = {
+                                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                            Text(nombreStaff, color = Color.Black)
+                                            if (tieneSucursal) {
+                                                Text("*", color = Color.Red)
+                                            }
+                                        }
+                                    }
+                                )
+                            }
+                            DropdownMenuItem(
+                                onClick = {
+                                    responsable = ""
+                                    expandedStaff = false
+                                },
+                                text = { Text("Sin encargado", color = Color.Gray) }
+                            )
+                        }
+                    }
+                    // Diálogo de confirmación para reasignar staff
+                    if (showDialogConfirmacion) {
+                        AlertDialog(
+                            onDismissRequest = { showDialogConfirmacion = false },
+                            title = { Text("¿Reasignar staff?") },
+                            text = {
+                                Text("El staff seleccionado ya está asignado a la sucursal '$sucursalAnteriorNombre'. ¿Deseas reasignarlo a la nueva sucursal, dejar la sucursal anterior sin staff o seleccionar un staff sin sucursal?")
+                            },
+                            confirmButton = {
+                                TextButton(onClick = {
+                                    val staff = staffList.find { it.first == staffPendienteId }?.second
+                                    val nombreStaff = staff?.get("nombre") as? String ?: ""
+                                    responsable = nombreStaff
+                                    showDialogConfirmacion = false
+                                }) { Text("Sí, reasignar") }
+                            },
+                            dismissButton = {
+                                Row {
+                                    TextButton(onClick = {
+                                        responsable = ""
+                                        showDialogConfirmacion = false
+                                    }) { Text("Seleccionar otro staff") }
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    TextButton(onClick = {
+                                        // Dejar la sucursal anterior sin staff
+                                        val staff = staffList.find { it.first == staffPendienteId }?.second
+                                        val sucursalStaffId = staff?.get("sucursalId") as? String
+                                        if (!sucursalStaffId.isNullOrBlank()) {
+                                            db.collection("staff").document(staffPendienteId).update("sucursalId", "")
+                                        }
+                                        val nombreStaff = staff?.get("nombre") as? String ?: ""
+                                        responsable = nombreStaff
+                                        showDialogConfirmacion = false
+                                    }) { Text("Dejar anterior sin staff") }
+                                }
+                            }
                         )
-                    )
+                    }
                     Spacer(modifier = Modifier.height(16.dp))
                     Button(
                         onClick = {
@@ -261,6 +503,30 @@ fun GestionSucursalesScreen(navController: NavController) {
                                 )
                                 db.collection("sucursales").document(selectedSucursalId).set(sucursal)
                                     .addOnSuccessListener {
+                                        // Actualizar staff automáticamente
+                                        if (responsable.isNotBlank()) {
+                                            // Buscar el staff seleccionado por nombre
+                                            val staffResponsable = staffList.find { (id, staff) -> staff["nombre"] == responsable }
+                                            // Quitar la sucursal a cualquier otro staff que la tuviera
+                                            staffList.forEach { (id, staff) ->
+                                                val sucursalStaff = staff["sucursalId"] as? String
+                                                if (sucursalStaff == selectedSucursalId && staff["nombre"] != responsable) {
+                                                    db.collection("staff").document(id).update("sucursalId", "")
+                                                }
+                                            }
+                                            // Asignar la sucursal al staff responsable
+                                            staffResponsable?.let { (id, _) ->
+                                                db.collection("staff").document(id).update("sucursalId", selectedSucursalId)
+                                            }
+                                        } else {
+                                            // Si no hay responsable, quitar la sucursal a todos los staff
+                                            staffList.forEach { (id, staff) ->
+                                                val sucursalStaff = staff["sucursalId"] as? String
+                                                if (sucursalStaff == selectedSucursalId) {
+                                                    db.collection("staff").document(id).update("sucursalId", "")
+                                                }
+                                            }
+                                        }
                                         isLoading = false
                                         Toast.makeText(context, "Sucursal actualizada exitosamente", Toast.LENGTH_SHORT).show()
                                         selectedSucursalId = ""
@@ -307,7 +573,7 @@ fun GestionSucursalesScreen(navController: NavController) {
                 }
             }
         }
-        // Menú hamburguesa igual que MainActivity
+        // Menú hamburguesa igual que MainActivity (último)
         if (menuVisible) {
             HamburgerMenu(
                 visible = true,
@@ -340,6 +606,34 @@ fun GestionSucursalesScreen(navController: NavController) {
                     }
                 }
             )
+        }
+        // Botón inferior fijo
+        if (selectedSucursalId.isEmpty() && !menuVisible) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 24.dp, start = 64.dp, end = 64.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Button(
+                    onClick = { navController.navigate("add_branch") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(44.dp)
+                        .clip(RoundedCornerShape(50)),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.White),
+                    border = BorderStroke(2.dp, Color.Black)
+                ) {
+                    Text(
+                        text = "AÑADIR SUCURSAL",
+                        color = Color.Black,
+                        style = MaterialTheme.typography.bodyLarge.copy(fontSize = 15.sp),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
         }
     }
 }

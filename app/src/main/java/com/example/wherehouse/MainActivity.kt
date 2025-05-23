@@ -188,6 +188,13 @@ class MainActivity : ComponentActivity() {
                             }
                         }, navController = navController)
                     }
+                    composable("success_sucursal") {
+                        Screens.SuccessSucursalScreen(onInventoryClick = {
+                            navController.navigate("main") {
+                                popUpTo(0) { inclusive = true }
+                            }
+                        }, navController = navController)
+                    }
                     composable("detalle_producto/{productoId}") { backStackEntry ->
                         if (auth.currentUser == null) {
                             LaunchedEffect(Unit) {

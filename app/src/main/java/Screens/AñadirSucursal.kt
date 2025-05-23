@@ -26,6 +26,12 @@ import com.google.firebase.ktx.Firebase
 import com.google.firebase.firestore.ktx.firestore
 import android.widget.Toast
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.Image
+import androidx.compose.material.icons.filled.Add
+import coil.compose.rememberAsyncImagePainter
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.compose.material3.AlertDialog
 
 @Composable
 fun AddBranchScreen(navController: NavController) {
@@ -34,9 +40,18 @@ fun AddBranchScreen(navController: NavController) {
     val currentUser = auth.currentUser
     var branchName by remember { mutableStateOf("") }
     var address by remember { mutableStateOf("") }
-    var responsiblePerson by remember { mutableStateOf("") }
     var menuVisible by remember { mutableStateOf(false) }
     var sucursales by remember { mutableStateOf(listOf<Pair<String, String>>()) }
+    var imageUri by remember { mutableStateOf<android.net.Uri?>(null) }
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: android.net.Uri? ->
+        imageUri = uri
+    }
+    val db = Firebase.firestore
+    var staffList by remember { mutableStateOf(listOf<Pair<String, Map<String, Any>>>()) }
+    var selectedStaffId by remember { mutableStateOf("") }
+    var showDialogConfirmacion by remember { mutableStateOf(false) }
+    var staffPendienteId by remember { mutableStateOf("") }
+    var sucursalAnteriorNombre by remember { mutableStateOf("") }
     // Cargar sucursales del usuario
     LaunchedEffect(currentUser) {
         if (currentUser != null) {
@@ -47,6 +62,19 @@ fun AddBranchScreen(navController: NavController) {
                 }
         }
     }
+    // Cargar staff libre (sin sucursal asignada)
+    LaunchedEffect(currentUser) {
+        if (currentUser != null) {
+            db.collection("staff").whereEqualTo("usuarioId", currentUser.uid).get()
+                .addOnSuccessListener { result ->
+                    staffList = result.documents.map { it.id to (it.data ?: emptyMap()) }
+                }
+        }
+    }
+    val staffSinSucursal = staffList.filter { (id, staff) ->
+        val sucursalStaff = staff["sucursalId"] as? String
+        sucursalStaff.isNullOrBlank()
+    }
     if (currentUser == null) {
         // Si no está autenticado, mostrar mensaje y redirigir
         LaunchedEffect(Unit) {
@@ -56,7 +84,6 @@ fun AddBranchScreen(navController: NavController) {
         return
     }
     val userId = currentUser.uid
-    val db = Firebase.firestore
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
@@ -114,18 +141,35 @@ fun AddBranchScreen(navController: NavController) {
                     horizontalArrangement = Arrangement.Center
                 ) {
                     Box(
-                        modifier = Modifier
-                            .size(120.dp)
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(Color.White),
+                        modifier = Modifier.size(120.dp).clip(RoundedCornerShape(16.dp)).background(Color.White).clickable { launcher.launch("image/*") },
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.AccountCircle,
-                            contentDescription = "Imagen de la sucursal",
-                            tint = Color.Gray,
-                            modifier = Modifier.size(70.dp)
-                        )
+                        if (imageUri != null) {
+                            Image(
+                                painter = rememberAsyncImagePainter(imageUri),
+                                contentDescription = "Imagen sucursal",
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Default.AccountCircle,
+                                contentDescription = "Imagen de la sucursal",
+                                tint = Color.Gray,
+                                modifier = Modifier.size(70.dp)
+                            )
+                        }
+                        // Ícono de +
+                        Box(
+                            modifier = Modifier.align(Alignment.BottomEnd).size(36.dp).clip(RoundedCornerShape(50)).background(Color(0xFFF8AA1A)).clickable { launcher.launch("image/*") },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = "Agregar imagen",
+                                tint = Color.White,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
                     }
                 }
                 Spacer(modifier = Modifier.height(20.dp))
@@ -169,45 +213,125 @@ fun AddBranchScreen(navController: NavController) {
                     )
                 )
                 Spacer(modifier = Modifier.height(10.dp))
-                if (sucursales.isNotEmpty()) {
-                OutlinedTextField(
-                    value = responsiblePerson,
-                    onValueChange = { responsiblePerson = it },
-                    label = { Text("Persona a cargo", color = Color.Black) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color.White, RoundedCornerShape(8.dp))
-                        .height(56.dp),
-                    textStyle = MaterialTheme.typography.bodyLarge.copy(color = Color.Black),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color.Transparent,
-                        unfocusedBorderColor = Color.Transparent,
-                        cursorColor = Color.Black,
-                        focusedLabelColor = Color.Black,
-                        unfocusedLabelColor = Color.Black,
-                        focusedTextColor = Color.Black,
-                        unfocusedTextColor = Color.Black
+                if (staffList.isNotEmpty()) {
+                    var expandedStaff by remember { mutableStateOf(false) }
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        OutlinedButton(
+                            onClick = { expandedStaff = true },
+                            modifier = Modifier.fillMaxWidth().background(Color.White, RoundedCornerShape(50)),
+                            shape = RoundedCornerShape(50),
+                            colors = ButtonDefaults.outlinedButtonColors(containerColor = Color.White)
+                        ) {
+                            Text(
+                                if (selectedStaffId.isNotBlank()) staffList.find { it.first == selectedStaffId }?.second?.get("nombre") as? String ?: "Selecciona persona a cargo" else "Selecciona persona a cargo",
+                                color = if (selectedStaffId.isNotBlank()) Color.Black else Color.Gray,
+                                modifier = Modifier.fillMaxWidth(),
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = expandedStaff,
+                            onDismissRequest = { expandedStaff = false },
+                            modifier = Modifier.background(Color.White)
+                        ) {
+                            staffList.forEach { (id, staff) ->
+                                val nombreStaff = staff["nombre"] as? String ?: "(Sin nombre)"
+                                val sucursalStaffId = staff["sucursalId"] as? String
+                                val sucursalStaffNombre = sucursales.find { it.first == sucursalStaffId }?.second
+                                val tieneSucursal = !sucursalStaffId.isNullOrBlank()
+                                DropdownMenuItem(
+                                    onClick = {
+                                        if (tieneSucursal) {
+                                            staffPendienteId = id
+                                            sucursalAnteriorNombre = sucursalStaffNombre ?: ""
+                                            showDialogConfirmacion = true
+                                        } else {
+                                            selectedStaffId = id
+                                            expandedStaff = false
+                                        }
+                                    },
+                                    text = {
+                                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                            Text(nombreStaff, color = Color.Black)
+                                            if (tieneSucursal) {
+                                                Text("*", color = Color.Red)
+                                            }
+                                        }
+                                    }
+                                )
+                            }
+                            DropdownMenuItem(
+                                onClick = {
+                                    selectedStaffId = ""
+                                    expandedStaff = false
+                                },
+                                text = { Text("Sin encargado", color = Color.Gray) }
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+                // Diálogo de confirmación para reasignar staff
+                if (showDialogConfirmacion) {
+                    AlertDialog(
+                        onDismissRequest = { showDialogConfirmacion = false },
+                        title = { Text("¿Reasignar staff?") },
+                        text = {
+                            Text("El staff seleccionado ya está asignado a la sucursal '$sucursalAnteriorNombre'. ¿Deseas reasignarlo a la nueva sucursal, dejar la sucursal anterior sin staff o seleccionar un staff sin sucursal?")
+                        },
+                        confirmButton = {
+                            TextButton(onClick = {
+                                selectedStaffId = staffPendienteId
+                                showDialogConfirmacion = false
+                            }) { Text("Sí, reasignar") }
+                        },
+                        dismissButton = {
+                            Row {
+                                TextButton(onClick = {
+                                    selectedStaffId = ""
+                                    showDialogConfirmacion = false
+                                }) { Text("Seleccionar otro staff") }
+                                Spacer(modifier = Modifier.width(8.dp))
+                                TextButton(onClick = {
+                                    // Dejar la sucursal anterior sin staff
+                                    val staff = staffList.find { it.first == staffPendienteId }?.second
+                                    val sucursalStaffId = staff?.get("sucursalId") as? String
+                                    if (!sucursalStaffId.isNullOrBlank()) {
+                                        db.collection("staff").document(staffPendienteId).update("sucursalId", "")
+                                    }
+                                    selectedStaffId = staffPendienteId
+                                    showDialogConfirmacion = false
+                                }) { Text("Dejar anterior sin staff") }
+                            }
+                        }
                     )
-                )
-                Spacer(modifier = Modifier.height(16.dp))
                 }
                 Button(
                     onClick = {
-                        if (branchName.isNotEmpty() && address.isNotEmpty() && (sucursales.isEmpty() || responsiblePerson.isNotEmpty())) {
+                        val staffObligatorio = staffSinSucursal.isNotEmpty() || (selectedStaffId.isNotBlank() && staffList.find { it.first == selectedStaffId }?.second?.get("sucursalId") != null)
+                        if (branchName.isNotEmpty() && address.isNotEmpty() && (!staffObligatorio || selectedStaffId.isNotEmpty())) {
                             val branch = hashMapOf(
                                 "nombre" to branchName,
                                 "direccion" to address,
-                                "responsable" to if (sucursales.isNotEmpty()) responsiblePerson else null,
+                                "responsable" to if (selectedStaffId.isNotEmpty()) staffList.find { it.first == selectedStaffId }?.second?.get("nombre") else null,
                                 "usuarioId" to userId
                             )
                             db.collection("sucursales").add(branch)
-                                .addOnSuccessListener {
-                                    Toast.makeText(context, "Sucursal añadida", Toast.LENGTH_SHORT).show()
-                                    if (sucursales.isEmpty()) {
-                                        navController.navigate("add_staff")
-                                    } else {
-                                        navController.navigate("success_sucursal")
+                                .addOnSuccessListener { sucursalRef ->
+                                    // Actualizar staff automáticamente
+                                    if (selectedStaffId.isNotEmpty()) {
+                                        val staff = staffList.find { it.first == selectedStaffId }?.second
+                                        val sucursalStaffId = staff?.get("sucursalId") as? String
+                                        if (!sucursalStaffId.isNullOrBlank() && sucursalStaffId != sucursalRef.id) {
+                                            // Si el staff estaba asignado a otra sucursal, quitarlo de la anterior
+                                            db.collection("staff").document(selectedStaffId).update("sucursalId", sucursalRef.id)
+                                        } else {
+                                            // Asignar la sucursal al staff responsable
+                                            db.collection("staff").document(selectedStaffId).update("sucursalId", sucursalRef.id)
+                                        }
                                     }
+                                    Toast.makeText(context, "Sucursal añadida", Toast.LENGTH_SHORT).show()
+                                    navController.navigate("success_sucursal")
                                 }
                                 .addOnFailureListener { e ->
                                     Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
