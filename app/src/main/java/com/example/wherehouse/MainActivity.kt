@@ -135,11 +135,58 @@ class MainActivity : ComponentActivity() {
                             AddProductScreen(navController = navController, onNavigateToMain = {})
                         }
                     }
+                    composable("add_staff") {
+                        if (auth.currentUser == null) {
+                            LaunchedEffect(Unit) {
+                                navController.navigate("login") {
+                                    popUpTo(0) { inclusive = true }
+                                }
+                            }
+                        } else {
+                            Screens.AddStaffScreen(navController)
+                        }
+                    }
+                    composable("editar_staff") {
+                        if (auth.currentUser == null) {
+                            LaunchedEffect(Unit) {
+                                navController.navigate("login") {
+                                    popUpTo(0) { inclusive = true }
+                                }
+                            }
+                        } else {
+                            Screens.EditarStaffScreen(navController)
+                        }
+                    }
+                    composable("gestion_sucursales") {
+                        if (auth.currentUser == null) {
+                            LaunchedEffect(Unit) {
+                                navController.navigate("login") {
+                                    popUpTo(0) { inclusive = true }
+                                }
+                            }
+                        } else {
+                            Screens.GestionSucursalesScreen(navController)
+                        }
+                    }
                     composable("login") {
                         Screens.LoginScreen(navController)
                     }
                     composable("crear_cuenta") {
                         com.example.wherehouse.screens.CreateAccountScreen(navController)
+                    }
+                    composable("success") {
+                        Screens.SuccessScreen(onInventoryClick = {
+                            navController.navigate("main") {
+                                popUpTo(0) { inclusive = true }
+                            }
+                        }, navController = navController)
+                    }
+                    composable("success_staff") {
+                        Screens.SuccessStaffScreen(onInventoryClick = {
+                            navController.navigate("main") {
+                                popUpTo(0) { inclusive = true }
+                            }
+                        }, navController = navController)
                     }
                     composable("detalle_producto/{productoId}") { backStackEntry ->
                         if (auth.currentUser == null) {
@@ -176,8 +223,8 @@ class MainActivity : ComponentActivity() {
                             Screens.GestionMasivaScreen(navController, esIncremento)
                         }
                     }
-                    composable("gestion_sucursales") {
-                        Screens.GestionSucursalesScreen(navController)
+                    composable("recuperar_contraseña") {
+                        Screens.RecuperarContrasenaScreen(navController)
                     }
                 }
             }
@@ -663,27 +710,21 @@ fun MainScreen(navController: NavController) {
             visible = true,
             onDismiss = { menuVisible = false },
             onInventarioClick = {
-                menuVisible = false
                 navController.popBackStack("main", false)
             },
             onAddBranchClick = {
-                menuVisible = false
                 navController.navigate("add_branch")
             },
             onGestionSucursalesClick = {
-                menuVisible = false
                 navController.navigate("gestion_sucursales")
             },
             onAddStaffClick = {
-                menuVisible = false
                 navController.navigate("add_staff")
             },
             onEditStaffClick = {
-                menuVisible = false
                 navController.navigate("editar_staff")
             },
             onLogoutClick = {
-                menuVisible = false
                 Firebase.auth.signOut()
                 navController.navigate("login") {
                     popUpTo("main") { inclusive = true }

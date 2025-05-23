@@ -30,6 +30,7 @@ import com.google.firebase.ktx.Firebase
 import com.google.firebase.firestore.ktx.firestore
 import android.widget.Toast
 import androidx.compose.ui.platform.LocalContext
+import com.google.firebase.storage.ktx.storage
 
 @Composable
 fun AddStaffScreen(navController: NavController) {
@@ -43,8 +44,10 @@ fun AddStaffScreen(navController: NavController) {
     var menuVisible by remember { mutableStateOf(false) }
     var sucursalId by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
-    // SucursalDropdown para seleccionar sucursal
-    SucursalDropdown(db = db, currentUser = currentUser) { id -> sucursalId = id }
+    var isDataLoaded by remember { mutableStateOf(false) }
+    var sucursales by remember { mutableStateOf(listOf<Pair<String, String>>()) }
+
+    // Verificar autenticación
     if (currentUser == null) {
         LaunchedEffect(Unit) {
             Toast.makeText(context, "Debes iniciar sesión para añadir staff", Toast.LENGTH_LONG).show()
@@ -52,6 +55,32 @@ fun AddStaffScreen(navController: NavController) {
         }
         return
     }
+
+    // Cargar sucursales al inicio
+    LaunchedEffect(currentUser) {
+        try {
+            isLoading = true
+            db.collection("sucursales")
+                .whereEqualTo("usuarioId", currentUser.uid)
+                .get()
+                .addOnSuccessListener { result ->
+                    sucursales = result.documents.mapNotNull { doc ->
+                        val nombre = doc.getString("nombre")
+                        if (nombre != null) doc.id to nombre else null
+                    }
+                    isDataLoaded = true
+                    isLoading = false
+                }
+                .addOnFailureListener { e ->
+                    Toast.makeText(context, "Error al cargar sucursales: ${e.message}", Toast.LENGTH_SHORT).show()
+                    isLoading = false
+                }
+        } catch (e: Exception) {
+            Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+            isLoading = false
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -84,158 +113,204 @@ fun AddStaffScreen(navController: NavController) {
                 )
             }
         }
-        Text(
-            text = "Añadir STAFF",
-            style = MaterialTheme.typography.displaySmall,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 16.dp, bottom = 8.dp),
-            textAlign = TextAlign.Center
-        )
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-                .background(Color(0xFFF8AA1A), shape = RoundedCornerShape(20.dp))
-                .padding(16.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center
+
+        if (isLoading) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(120.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(Color.White),
-                    contentAlignment = Alignment.Center
+                CircularProgressIndicator()
+            }
+        } else {
+            Text(
+                text = "Añadir STAFF",
+                style = MaterialTheme.typography.displaySmall,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp, bottom = 8.dp),
+                textAlign = TextAlign.Center
+            )
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .background(Color(0xFFF8AA1A), shape = RoundedCornerShape(20.dp))
+                    .padding(16.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.AccountCircle,
-                        contentDescription = "Imagen staff",
-                        tint = Color.Gray,
-                        modifier = Modifier.size(70.dp)
+                    Box(
+                        modifier = Modifier
+                            .size(120.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(Color.White),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.AccountCircle,
+                            contentDescription = "Imagen staff",
+                            tint = Color.Gray,
+                            modifier = Modifier.size(70.dp)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(20.dp))
+                OutlinedTextField(
+                    value = personName,
+                    onValueChange = { personName = it },
+                    label = { Text("Nombre de la persona *", color = Color.Black) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color.White, RoundedCornerShape(8.dp))
+                        .height(56.dp),
+                    textStyle = TextStyle(color = Color.Black, textAlign = TextAlign.Start, fontSize = MaterialTheme.typography.bodyMedium.fontSize),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color.Transparent,
+                        unfocusedBorderColor = Color.Transparent,
+                        cursorColor = Color.Black,
+                        focusedLabelColor = Color.Black,
+                        unfocusedLabelColor = Color.Black,
+                        focusedTextColor = Color.Black,
+                        unfocusedTextColor = Color.Black
                     )
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+                OutlinedTextField(
+                    value = staffId,
+                    onValueChange = { staffId = it },
+                    label = { Text("ID *", color = Color.Black) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color.White, RoundedCornerShape(8.dp))
+                        .height(56.dp),
+                    textStyle = TextStyle(color = Color.Black, textAlign = TextAlign.Start, fontSize = MaterialTheme.typography.bodyMedium.fontSize),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color.Transparent,
+                        unfocusedBorderColor = Color.Transparent,
+                        cursorColor = Color.Black,
+                        focusedLabelColor = Color.Black,
+                        unfocusedLabelColor = Color.Black,
+                        focusedTextColor = Color.Black,
+                        unfocusedTextColor = Color.Black
+                    )
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+                OutlinedTextField(
+                    value = store,
+                    onValueChange = { store = it },
+                    label = { Text("Tienda a cargo", color = Color.Black) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color.White, RoundedCornerShape(8.dp))
+                        .height(56.dp),
+                    textStyle = TextStyle(color = Color.Black, textAlign = TextAlign.Start, fontSize = MaterialTheme.typography.bodyMedium.fontSize),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color.Transparent,
+                        unfocusedBorderColor = Color.Transparent,
+                        cursorColor = Color.Black,
+                        focusedLabelColor = Color.Black,
+                        unfocusedLabelColor = Color.Black,
+                        focusedTextColor = Color.Black,
+                        unfocusedTextColor = Color.Black
+                    )
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Dropdown de sucursales
+                var sucursalExpanded by remember { mutableStateOf(false) }
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    OutlinedButton(
+                        onClick = { sucursalExpanded = true },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color.White, RoundedCornerShape(50)),
+                        shape = RoundedCornerShape(50),
+                        colors = ButtonDefaults.outlinedButtonColors(containerColor = Color.White)
+                    ) {
+                        Text(
+                            sucursales.find { it.first == sucursalId }?.second ?: "¿A qué sucursal pertenece?",
+                            color = Color.Black,
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = sucursalExpanded,
+                        onDismissRequest = { sucursalExpanded = false },
+                        modifier = Modifier.background(Color.White)
+                    ) {
+                        sucursales.forEach { (id, nombre) ->
+                            DropdownMenuItem(
+                                onClick = {
+                                    sucursalId = id
+                                    sucursalExpanded = false
+                                },
+                                text = { Text(nombre, color = Color.Black) }
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Button(
+                    onClick = {
+                        if (personName.isBlank() || staffId.isBlank() || sucursalId.isBlank()) {
+                            Toast.makeText(context, "Completa todos los campos obligatorios", Toast.LENGTH_SHORT).show()
+                            return@Button
+                        }
+                        isLoading = true
+                        val staff = hashMapOf(
+                            "nombre" to personName,
+                            "staffId" to staffId,
+                            "sucursalId" to sucursalId,
+                            "usuarioId" to currentUser.uid,
+                            "store" to store
+                        )
+                        db.collection("staff").add(staff)
+                            .addOnSuccessListener {
+                                isLoading = false
+                                Toast.makeText(context, "Staff añadido exitosamente", Toast.LENGTH_SHORT).show()
+                                navController.navigate("success_staff")
+                            }
+                            .addOnFailureListener { e ->
+                                isLoading = false
+                                Toast.makeText(context, "Error al añadir staff: ${e.message}", Toast.LENGTH_SHORT).show()
+                            }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
+                        .clip(RoundedCornerShape(50)),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.White),
+                    border = BorderStroke(2.dp, Color.Black),
+                    enabled = !isLoading
+                ) {
+                    if (isLoading) {
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.Black)
+                    } else {
+                        Text(
+                            text = "AÑADIR STAFF",
+                            color = Color.Black,
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
                 }
             }
-            Spacer(modifier = Modifier.height(20.dp))
-            OutlinedTextField(
-                value = personName,
-                onValueChange = { personName = it },
-                label = { Text("Nombre de la persona *", color = Color.Black) },
+            Spacer(modifier = Modifier.height(24.dp))
+            Text(
+                text = "¿NO TIENE SUCURSAL?",
+                color = Color.Black,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color.White, RoundedCornerShape(8.dp))
-                    .height(56.dp),
-                textStyle = TextStyle(color = Color.Black, textAlign = TextAlign.Start, fontSize = MaterialTheme.typography.bodyMedium.fontSize),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color.Transparent,
-                    unfocusedBorderColor = Color.Transparent,
-                    cursorColor = Color.Black,
-                    focusedLabelColor = Color.Black,
-                    unfocusedLabelColor = Color.Black,
-                    focusedTextColor = Color.Black,
-                    unfocusedTextColor = Color.Black
-                )
+                    .clickable { navController.navigate("add_branch") }
             )
-            Spacer(modifier = Modifier.height(10.dp))
-            OutlinedTextField(
-                value = staffId,
-                onValueChange = { staffId = it },
-                label = { Text("ID *", color = Color.Black) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(Color.White, RoundedCornerShape(8.dp))
-                    .height(56.dp),
-                textStyle = TextStyle(color = Color.Black, textAlign = TextAlign.Start, fontSize = MaterialTheme.typography.bodyMedium.fontSize),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color.Transparent,
-                    unfocusedBorderColor = Color.Transparent,
-                    cursorColor = Color.Black,
-                    focusedLabelColor = Color.Black,
-                    unfocusedLabelColor = Color.Black,
-                    focusedTextColor = Color.Black,
-                    unfocusedTextColor = Color.Black
-                )
-            )
-            Spacer(modifier = Modifier.height(10.dp))
-            OutlinedTextField(
-                value = store,
-                onValueChange = { store = it },
-                label = { Text("Tienda a cargo", color = Color.Black) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(Color.White, RoundedCornerShape(8.dp))
-                    .height(56.dp),
-                textStyle = TextStyle(color = Color.Black, textAlign = TextAlign.Start, fontSize = MaterialTheme.typography.bodyMedium.fontSize),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color.Transparent,
-                    unfocusedBorderColor = Color.Transparent,
-                    cursorColor = Color.Black,
-                    focusedLabelColor = Color.Black,
-                    unfocusedLabelColor = Color.Black,
-                    focusedTextColor = Color.Black,
-                    unfocusedTextColor = Color.Black
-                )
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Button(
-                onClick = {
-                    if (currentUser == null) {
-                        Toast.makeText(context, "Debes iniciar sesión", Toast.LENGTH_SHORT).show()
-                        return@Button
-                    }
-                    if (personName.isBlank() || staffId.isBlank()) {
-                        Toast.makeText(context, "Completa los campos obligatorios", Toast.LENGTH_SHORT).show()
-                        return@Button
-                    }
-                    isLoading = true
-                    val staff = hashMapOf(
-                        "nombre" to personName,
-                        "staffId" to staffId,
-                        "sucursalId" to sucursalId,
-                        "usuarioId" to currentUser.uid,
-                        "store" to store
-                    )
-                    db.collection("staff").add(staff)
-                        .addOnSuccessListener {
-                            isLoading = false
-                            Toast.makeText(context, "Staff añadido", Toast.LENGTH_SHORT).show()
-                            navController.navigate("success_staff")
-                        }
-                        .addOnFailureListener { e ->
-                            isLoading = false
-                            Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
-                        }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp)
-                    .clip(RoundedCornerShape(50)),
-                colors = ButtonDefaults.buttonColors(containerColor = Color.White),
-                border = BorderStroke(2.dp, Color.Black)
-            ) {
-                if (isLoading) {
-                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.Black)
-                } else {
-                    Text(
-                        text = "AÑADIR STAFF",
-                        color = Color.Black,
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                }
-            }
         }
-        Spacer(modifier = Modifier.height(24.dp))
-        Text(
-            text = "¿NO TIENE SUCURSAL?",
-            color = Color.Black,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center,
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { navController.navigate("add_branch") }
-        )
     }
     if (menuVisible) {
         HamburgerMenu(
@@ -276,16 +351,28 @@ fun AddStaffScreen(navController: NavController) {
 fun SucursalDropdown(db: com.google.firebase.firestore.FirebaseFirestore, currentUser: com.google.firebase.auth.FirebaseUser?, onSucursalSelected: (String) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
     var selectedOption by remember { mutableStateOf("¿A qué sucursal pertenece?") }
-    var sucursales by remember { mutableStateOf(listOf<Pair<String, String>>()) } // (id, nombre)
-    // Cargar sucursales del usuario
+    var sucursales by remember { mutableStateOf(listOf<Pair<String, String>>()) }
+    var isLoading by remember { mutableStateOf(true) }
+
     LaunchedEffect(currentUser) {
         if (currentUser != null) {
-            db.collection("sucursales").whereEqualTo("usuarioId", currentUser.uid).get()
-                .addOnSuccessListener { result ->
-                    sucursales = result.documents.map { it.id to (it.getString("nombre") ?: "") }
-                }
+            try {
+                db.collection("sucursales")
+                    .whereEqualTo("usuarioId", currentUser.uid)
+                    .get()
+                    .addOnSuccessListener { result ->
+                        sucursales = result.documents.map { it.id to (it.getString("nombre") ?: "") }
+                        isLoading = false
+                    }
+                    .addOnFailureListener { e ->
+                        isLoading = false
+                    }
+            } catch (e: Exception) {
+                isLoading = false
+            }
         }
     }
+
     Box(modifier = Modifier.fillMaxWidth()) {
         OutlinedButton(
             onClick = { expanded = true },
@@ -293,9 +380,17 @@ fun SucursalDropdown(db: com.google.firebase.firestore.FirebaseFirestore, curren
                 .fillMaxWidth()
                 .background(Color.White, RoundedCornerShape(50)),
             shape = RoundedCornerShape(50),
-            colors = ButtonDefaults.outlinedButtonColors(containerColor = Color.White)
+            colors = ButtonDefaults.outlinedButtonColors(containerColor = Color.White),
+            enabled = !isLoading
         ) {
-            Text(selectedOption, color = Color.Black, modifier = Modifier.fillMaxWidth())
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    color = Color.Black
+                )
+            } else {
+                Text(selectedOption, color = Color.Black, modifier = Modifier.fillMaxWidth())
+            }
         }
         DropdownMenu(
             expanded = expanded,

@@ -295,11 +295,12 @@ fun ProductDetailScreen(navController: NavController, productoId: String) {
                                 }
                         }
                         if (imageUri != null) {
-                            val ref = storage.reference.child("productos/${currentUser.uid}/${System.currentTimeMillis()}.jpg")
-                            ref.putFile(imageUri!!)
+                            val userId = Firebase.auth.currentUser?.uid ?: ""
+                            val storageRef = Firebase.storage.reference.child("users/$userId/${System.currentTimeMillis()}.jpg")
+                            storageRef.putFile(imageUri!!)
                                 .continueWithTask { task ->
                                     if (!task.isSuccessful) throw task.exception ?: Exception("Error al subir imagen")
-                                    ref.downloadUrl
+                                    storageRef.downloadUrl
                                 }
                                 .addOnSuccessListener { uri ->
                                     actualizarProducto(uri.toString())

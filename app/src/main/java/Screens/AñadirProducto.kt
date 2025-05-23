@@ -333,11 +333,12 @@ fun AddProductScreen(navController: NavController, onNavigateToMain: () -> Unit)
                                 }
                         }
                         if (imageUri != null) {
-                            val ref = storage.reference.child("productos/${currentUser.uid}/${System.currentTimeMillis()}.jpg")
-                            ref.putFile(imageUri!!)
+                            val userId = Firebase.auth.currentUser?.uid ?: ""
+                            val storageRef = Firebase.storage.reference.child("users/$userId/${System.currentTimeMillis()}.jpg")
+                            storageRef.putFile(imageUri!!)
                                 .continueWithTask { task ->
                                     if (!task.isSuccessful) throw task.exception ?: Exception("Error al subir imagen")
-                                    ref.downloadUrl
+                                    storageRef.downloadUrl
                                 }
                                 .addOnSuccessListener { uri ->
                                     guardarProducto(uri.toString())
@@ -385,9 +386,16 @@ fun AddProductScreen(navController: NavController, onNavigateToMain: () -> Unit)
                     menuVisible = false
                     navController.navigate("gestion_sucursales")
                 },
-                onAddStaffClick = { onAddStaffClick = null },
-                onEditStaffClick = { onAddStaffClick = null },
+                onAddStaffClick = {
+                    menuVisible = false
+                    navController.navigate("add_staff")
+                },
+                onEditStaffClick = {
+                    menuVisible = false
+                    navController.navigate("editar_staff")
+                },
                 onLogoutClick = {
+                    menuVisible = false
                     // Implementa la lógica para cerrar sesión
                 }
             )
@@ -498,15 +506,15 @@ fun HamburgerMenu(
                     )
                 }
                 Spacer(modifier = Modifier.height(8.dp))
-                AñadirProducto(text = "Inventario", onClick = onInventarioClick)
-                AñadirProducto(text = "Añadir sucursal", onClick = onAddBranchClick)
-                AñadirProducto(text = "Gestionar sucursales", onClick = onGestionSucursalesClick)
-                AñadirProducto(text = "Añadir staff", onClick = { onAddStaffClick?.invoke() })
-                AñadirProducto(text = "Administrar staff", onClick = { onEditStaffClick?.invoke() })
+                AñadirProducto(text = "Inventario", onClick = { onDismiss(); onInventarioClick() })
+                AñadirProducto(text = "Añadir sucursal", onClick = { onDismiss(); onAddBranchClick() })
+                AñadirProducto(text = "Gestionar sucursales", onClick = { onDismiss(); onGestionSucursalesClick() })
+                AñadirProducto(text = "Añadir staff", onClick = { onDismiss(); onAddStaffClick?.invoke() })
+                AñadirProducto(text = "Administrar staff", onClick = { onDismiss(); onEditStaffClick?.invoke() })
                 Spacer(modifier = Modifier.weight(1f))
                 if (isLoggedIn && onLogoutClick != null) {
                     Button(
-                        onClick = onLogoutClick,
+                        onClick = { onDismiss(); onLogoutClick() },
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 8.dp),

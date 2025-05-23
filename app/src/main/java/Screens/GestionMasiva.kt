@@ -243,7 +243,7 @@ fun GestionMasivaScreen(navController: NavController, esIncremento: Boolean) {
                                 cantidades = cantidades.toMutableMap().apply { put(id, value) }
                             }
                         },
-                        placeholder = { Text(nombre.take(1).uppercase(), color = Color.LightGray) },
+                        placeholder = { Text("Cantidad") },
                         label = { Text("Cantidad a ${if (esIncremento) "sumar" else "restar"}", color = Color.Black) },
                         singleLine = true,
                         modifier = Modifier.width(90.dp).height(48.dp).background(Color.White, RoundedCornerShape(8.dp)),
