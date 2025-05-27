@@ -21,6 +21,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.wherehouse.R
 import com.example.wherehouse.ui.theme.WherehouseTheme
 import androidx.navigation.NavController
@@ -36,6 +37,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import coil.compose.rememberAsyncImagePainter
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.compose.foundation.border
 
 @Composable
 fun AddStaffScreen(navController: NavController) {
@@ -152,43 +154,48 @@ fun AddStaffScreen(navController: NavController) {
                 CircularProgressIndicator()
             }
         } else {
-            Text(
-                text = "Añadir STAFF",
-                style = MaterialTheme.typography.displaySmall,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 16.dp, bottom = 8.dp),
-                textAlign = TextAlign.Center
-            )
+        Text(
+            text = "Añadir STAFF",
+            style = MaterialTheme.typography.displaySmall,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 16.dp, bottom = 8.dp),
+            textAlign = TextAlign.Center
+        )
 
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .background(Color(0xFFF8AA1A), shape = RoundedCornerShape(20.dp))
-                    .padding(16.dp)
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .background(Color(0xFFF8AA1A), shape = RoundedCornerShape(20.dp))
+                .padding(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    Box(
+                Box(
                         modifier = Modifier.size(120.dp).clip(RoundedCornerShape(16.dp)).background(Color.White).clickable { launcher.launch("image/*") },
-                        contentAlignment = Alignment.Center
-                    ) {
+                    contentAlignment = Alignment.Center
+                ) {
                         if (imageUri != null) {
                             Image(
                                 painter = rememberAsyncImagePainter(imageUri),
                                 contentDescription = "Imagen staff",
                                 modifier = Modifier.fillMaxSize()
                             )
-                        } else {
-                            Icon(
-                                imageVector = Icons.Default.AccountCircle,
+                        } else if (!store.isNullOrBlank()) {
+                            Image(
+                                painter = rememberAsyncImagePainter(store),
                                 contentDescription = "Imagen staff",
-                                tint = Color.Gray,
-                                modifier = Modifier.size(70.dp)
+                                modifier = Modifier.fillMaxSize()
                             )
+                        } else {
+                            Image(
+                                painter = painterResource(id = R.drawable.paisaje),
+                        contentDescription = "Imagen staff",
+                        modifier = Modifier.size(70.dp)
+                    )
                         }
                         // Ícono de +
                         Box(
@@ -202,125 +209,182 @@ fun AddStaffScreen(navController: NavController) {
                                 modifier = Modifier.size(24.dp)
                             )
                         }
-                    }
                 }
-                Spacer(modifier = Modifier.height(20.dp))
-                OutlinedTextField(
-                    value = personName,
-                    onValueChange = { personName = it },
-                    label = { Text("Nombre de la persona *", color = Color.Black) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color.White, RoundedCornerShape(8.dp))
-                        .height(56.dp),
-                    textStyle = TextStyle(color = Color.Black, textAlign = TextAlign.Start, fontSize = MaterialTheme.typography.bodyMedium.fontSize),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color.Transparent,
-                        unfocusedBorderColor = Color.Transparent,
-                        cursorColor = Color.Black,
-                        focusedLabelColor = Color.Black,
-                        unfocusedLabelColor = Color.Black,
-                        focusedTextColor = Color.Black,
-                        unfocusedTextColor = Color.Black
-                    )
+            }
+            Spacer(modifier = Modifier.height(20.dp))
+            OutlinedTextField(
+                value = personName,
+                onValueChange = { personName = it },
+                label = { Text("Nombre de la persona *", color = Color.Black) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.White, RoundedCornerShape(8.dp))
+                    .height(56.dp),
+                textStyle = TextStyle(color = Color.Black, textAlign = TextAlign.Start, fontSize = MaterialTheme.typography.bodyMedium.fontSize),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color.Transparent,
+                    unfocusedBorderColor = Color.Transparent,
+                    cursorColor = Color.Black,
+                    focusedLabelColor = Color.Black,
+                    unfocusedLabelColor = Color.Black,
+                    focusedTextColor = Color.Black,
+                    unfocusedTextColor = Color.Black
                 )
-                Spacer(modifier = Modifier.height(10.dp))
-                OutlinedTextField(
-                    value = staffId,
-                    onValueChange = { staffId = it },
-                    label = { Text("ID *", color = Color.Black) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color.White, RoundedCornerShape(8.dp))
-                        .height(56.dp),
-                    textStyle = TextStyle(color = Color.Black, textAlign = TextAlign.Start, fontSize = MaterialTheme.typography.bodyMedium.fontSize),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color.Transparent,
-                        unfocusedBorderColor = Color.Transparent,
-                        cursorColor = Color.Black,
-                        focusedLabelColor = Color.Black,
-                        unfocusedLabelColor = Color.Black,
-                        focusedTextColor = Color.Black,
-                        unfocusedTextColor = Color.Black
-                    )
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            OutlinedTextField(
+                value = staffId,
+                onValueChange = { staffId = it },
+                label = { Text("ID *", color = Color.Black) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.White, RoundedCornerShape(8.dp))
+                    .height(56.dp),
+                textStyle = TextStyle(color = Color.Black, textAlign = TextAlign.Start, fontSize = MaterialTheme.typography.bodyMedium.fontSize),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color.Transparent,
+                    unfocusedBorderColor = Color.Transparent,
+                    cursorColor = Color.Black,
+                    focusedLabelColor = Color.Black,
+                    unfocusedLabelColor = Color.Black,
+                    focusedTextColor = Color.Black,
+                    unfocusedTextColor = Color.Black
                 )
+            )
                 Spacer(modifier = Modifier.height(16.dp))
 
                 // Dropdown de sucursales
                 var sucursalExpanded by remember { mutableStateOf(false) }
-                Box(modifier = Modifier.fillMaxWidth()) {
-                    OutlinedButton(
-                        onClick = { sucursalExpanded = true },
-                        modifier = Modifier.fillMaxWidth().background(Color.White, RoundedCornerShape(50)),
-                        shape = RoundedCornerShape(50),
-                        colors = ButtonDefaults.outlinedButtonColors(containerColor = Color.White)
-                    ) {
-                        Text(
-                            sucursales.find { it.first == sucursalId }?.second ?: "¿A qué sucursal pertenece?",
-                            color = Color.Black,
-                            modifier = Modifier.fillMaxWidth(),
-                            textAlign = TextAlign.Center
-                        )
-                    }
-                    DropdownMenu(
-                        expanded = sucursalExpanded,
-                        onDismissRequest = { sucursalExpanded = false },
-                        modifier = Modifier.background(Color.White)
-                    ) {
-                        sucursalesDisponibles.forEach { (id, nombreSucursal) ->
-                            val encargado = staffList.find { it.second["sucursalId"] == id }?.second?.get("nombre") as? String
-                            val staffEncargadoId = staffList.find { it.second["sucursalId"] == id }?.first
-                            DropdownMenuItem(
-                                onClick = {
-                                    if (encargado != null && id != sucursalId && staffEncargadoId != null) {
-                                        sucursalSeleccionadaPendiente = id
-                                        encargadoActual = encargado
-                                        showDialogConfirmacion = true
-                                    } else {
-                                        sucursalId = id
-                                        sucursalExpanded = false
-                                    }
-                                },
-                                text = {
-                                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                        Text(nombreSucursal, color = Color.Black)
+                if (!showDialogConfirmacion) {
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        OutlinedButton(
+                            onClick = { sucursalExpanded = true },
+                            modifier = Modifier.fillMaxWidth().background(Color.White, RoundedCornerShape(50)),
+                            shape = RoundedCornerShape(50),
+                            colors = ButtonDefaults.outlinedButtonColors(containerColor = Color.White)
+                        ) {
+                            Text(
+                                sucursales.find { it.first == sucursalId }?.second ?: "¿A qué sucursal pertenece?",
+                                color = Color.Black,
+                                modifier = Modifier.fillMaxWidth(),
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = sucursalExpanded,
+                            onDismissRequest = { sucursalExpanded = false },
+                            modifier = Modifier.background(Color.White)
+                        ) {
+                            sucursales.forEach { (id, nombreSucursal) ->
+                                val encargado = staffList.find { it.second["sucursalId"] == id }?.second?.get("nombre") as? String
+                                val staffEncargadoId = staffList.find { it.second["sucursalId"] == id }?.first
+                                DropdownMenuItem(
+                                    onClick = {
                                         if (encargado != null && id != sucursalId && staffEncargadoId != null) {
-                                            Text("(Encargado: $encargado)", color = Color.Red, style = MaterialTheme.typography.bodySmall)
+                                            sucursalSeleccionadaPendiente = id
+                                            encargadoActual = encargado
+                                            showDialogConfirmacion = true
+                                        } else {
+                                            sucursalId = id
+                                            sucursalExpanded = false
+                                        }
+                                    },
+                                    text = {
+                                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                            Text(nombreSucursal, color = Color.Black)
+                                            if (encargado != null && id != sucursalId && staffEncargadoId != null) {
+                                                Text("*", color = Color.Red)
+                                            }
                                         }
                                     }
-                                }
-                            )
+                                )
+                            }
                         }
                     }
                 }
+                // MODAL DE CONFIRMACIÓN SIEMPRE ENCIMA DE TODO
                 if (showDialogConfirmacion) {
-                    AlertDialog(
-                        onDismissRequest = { showDialogConfirmacion = false },
-                        title = { Text("¿Reasignar encargado?") },
-                        text = {
-                            Text("Esta sucursal ya tiene un encargado ($encargadoActual). ¿Deseas reasignar el encargado a este staff?\n\nTe recomendamos editar el staff sin sucursal asignada para evitar inconsistencias.")
-                        },
-                        confirmButton = {
-                            TextButton(onClick = {
-                                val staffEncargadoId = staffList.find { it.second["sucursalId"] == sucursalSeleccionadaPendiente }?.first
-                                if (staffEncargadoId != null) {
-                                    db.collection("staff").document(staffEncargadoId).update("sucursalId", "")
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color(0x80000000))
+                            .clickable(enabled = false) { },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth(0.8f)
+                                .background(Color.White, shape = RoundedCornerShape(20.dp))
+                                .border(BorderStroke(2.dp, Color(0xFFF8AA1A)), RoundedCornerShape(20.dp))
+                                .padding(16.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "¿Reasignar encargado?",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = Color.Black,
+                                modifier = Modifier.fillMaxWidth(),
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Esta sucursal ya tiene un encargado ($encargadoActual). ¿Deseas reasignar el encargado a este staff?\n\nTe recomendamos editar el staff sin sucursal asignada para evitar inconsistencias.",
+                                color = Color.Black,
+                                style = MaterialTheme.typography.bodySmall,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceEvenly
+                            ) {
+                                Button(
+                                    onClick = {
+                                        val staffEncargadoId = staffList.find { it.second["sucursalId"] == sucursalSeleccionadaPendiente }?.first
+                                        if (staffEncargadoId != null) {
+                                            db.collection("staff").document(staffEncargadoId).update("sucursalId", "")
+                                        }
+                                        sucursalId = sucursalSeleccionadaPendiente
+                                        sucursalExpanded = false
+                                        showDialogConfirmacion = false
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text("Sí, reasignar", color = Color.White, fontSize = 12.sp)
                                 }
-                                sucursalId = sucursalSeleccionadaPendiente
-                                sucursalExpanded = false
-                                showDialogConfirmacion = false
-                            }) {
-                                Text("Sí, reasignar")
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Button(
+                                    onClick = {
+                                        sucursalId = ""
+                                        showDialogConfirmacion = false
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color.White),
+                                    border = BorderStroke(2.dp, Color.Black),
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text("Seleccionar otra", color = Color.Black, fontSize = 12.sp)
+                                }
                             }
-                        },
-                        dismissButton = {
-                            TextButton(onClick = {
-                                showDialogConfirmacion = false
-                            }) {
-                                Text("Cancelar")
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Button(
+                                onClick = {
+                                    // Dejar la sucursal anterior sin staff
+                                    val staffEncargadoId = staffList.find { it.second["sucursalId"] == sucursalSeleccionadaPendiente }?.first
+                                    if (staffEncargadoId != null) {
+                                        db.collection("staff").document(staffEncargadoId).update("sucursalId", "")
+                                    }
+                                    sucursalId = sucursalSeleccionadaPendiente
+                                    sucursalExpanded = false
+                                    showDialogConfirmacion = false
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF8AA1A)),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("Dejar anterior sin staff", color = Color.Black, fontSize = 12.sp)
                             }
                         }
-                    )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -347,15 +411,15 @@ fun AddStaffScreen(navController: NavController) {
                                 "imagenUrl" to (urlImagen ?: "")
                             )
                             db.collection("staff").add(staff)
-                                .addOnSuccessListener {
-                                    isLoading = false
-                                    Toast.makeText(context, "Staff añadido exitosamente", Toast.LENGTH_SHORT).show()
-                                    navController.navigate("success_staff")
-                                }
-                                .addOnFailureListener { e ->
-                                    isLoading = false
-                                    Toast.makeText(context, "Error al añadir staff: ${e.message}", Toast.LENGTH_SHORT).show()
-                                }
+                            .addOnSuccessListener {
+                                isLoading = false
+                                Toast.makeText(context, "Staff añadido exitosamente", Toast.LENGTH_SHORT).show()
+                                navController.navigate("success_staff")
+                            }
+                            .addOnFailureListener { e ->
+                                isLoading = false
+                                Toast.makeText(context, "Error al añadir staff: ${e.message}", Toast.LENGTH_SHORT).show()
+                            }
                         }
                         if (imageUri != null) {
                             val userId = currentUser.uid
@@ -455,8 +519,8 @@ fun SucursalDropdown(db: com.google.firebase.firestore.FirebaseFirestore, curren
                 db.collection("sucursales")
                     .whereEqualTo("usuarioId", currentUser.uid)
                     .get()
-                    .addOnSuccessListener { result ->
-                        sucursales = result.documents.map { it.id to (it.getString("nombre") ?: "") }
+                .addOnSuccessListener { result ->
+                    sucursales = result.documents.map { it.id to (it.getString("nombre") ?: "") }
                         isLoading = false
                     }
                     .addOnFailureListener { e ->
@@ -484,7 +548,7 @@ fun SucursalDropdown(db: com.google.firebase.firestore.FirebaseFirestore, curren
                     color = Color.Black
                 )
             } else {
-                Text(selectedOption, color = Color.Black, modifier = Modifier.fillMaxWidth())
+            Text(selectedOption, color = Color.Black, modifier = Modifier.fillMaxWidth())
             }
         }
         DropdownMenu(

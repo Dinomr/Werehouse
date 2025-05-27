@@ -38,6 +38,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import com.google.firebase.firestore.ListenerRegistration
 import androidx.compose.material3.AlertDialog
+import androidx.compose.ui.res.painterResource
+import com.example.wherehouse.R
 
 @Composable
 fun GestionSucursalesScreen(navController: NavController) {
@@ -235,10 +237,9 @@ fun GestionSucursalesScreen(navController: NavController) {
                                         modifier = Modifier.size(40.dp)
                                     )
                                 } else {
-                                    Icon(
-                                        imageVector = Icons.Default.AccountCircle,
+                                    Image(
+                                        painter = painterResource(id = R.drawable.paisaje),
                                         contentDescription = "Imagen sucursal",
-                                        tint = Color.Gray,
                                         modifier = Modifier.size(40.dp)
                                     )
                                 }
@@ -342,10 +343,9 @@ fun GestionSucursalesScreen(navController: NavController) {
                                 modifier = Modifier.fillMaxSize()
                             )
                         } else {
-                            Icon(
-                                imageVector = Icons.Default.AccountCircle,
+                            Image(
+                                painter = painterResource(id = R.drawable.paisaje),
                                 contentDescription = "Imagen sucursal",
-                                tint = Color.Gray,
                                 modifier = Modifier.size(70.dp)
                             )
                         }
@@ -447,44 +447,6 @@ fun GestionSucursalesScreen(navController: NavController) {
                             )
                         }
                     }
-                    // Diálogo de confirmación para reasignar staff
-                    if (showDialogConfirmacion) {
-                        AlertDialog(
-                            onDismissRequest = { showDialogConfirmacion = false },
-                            title = { Text("¿Reasignar staff?") },
-                            text = {
-                                Text("El staff seleccionado ya está asignado a la sucursal '$sucursalAnteriorNombre'. ¿Deseas reasignarlo a la nueva sucursal, dejar la sucursal anterior sin staff o seleccionar un staff sin sucursal?")
-                            },
-                            confirmButton = {
-                                TextButton(onClick = {
-                                    val staff = staffList.find { it.first == staffPendienteId }?.second
-                                    val nombreStaff = staff?.get("nombre") as? String ?: ""
-                                    responsable = nombreStaff
-                                    showDialogConfirmacion = false
-                                }) { Text("Sí, reasignar") }
-                            },
-                            dismissButton = {
-                                Row {
-                                    TextButton(onClick = {
-                                        responsable = ""
-                                        showDialogConfirmacion = false
-                                    }) { Text("Seleccionar otro staff") }
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    TextButton(onClick = {
-                                        // Dejar la sucursal anterior sin staff
-                                        val staff = staffList.find { it.first == staffPendienteId }?.second
-                                        val sucursalStaffId = staff?.get("sucursalId") as? String
-                                        if (!sucursalStaffId.isNullOrBlank()) {
-                                            db.collection("staff").document(staffPendienteId).update("sucursalId", "")
-                                        }
-                                        val nombreStaff = staff?.get("nombre") as? String ?: ""
-                                        responsable = nombreStaff
-                                        showDialogConfirmacion = false
-                                    }) { Text("Dejar anterior sin staff") }
-                                }
-                            }
-                        )
-                    }
                     Spacer(modifier = Modifier.height(16.dp))
                     Button(
                         onClick = {
@@ -569,6 +531,88 @@ fun GestionSucursalesScreen(navController: NavController) {
                                 style = MaterialTheme.typography.bodyLarge
                             )
                         }
+                    }
+                }
+            }
+        }
+        // MODAL DE CONFIRMACIÓN SIEMPRE ENCIMA DE TODO
+        if (showDialogConfirmacion) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xCC000000))
+                    .clickable(enabled = false) { },
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth(0.9f)
+                        .background(Color.White, shape = RoundedCornerShape(20.dp))
+                        .border(BorderStroke(2.dp, Color(0xFFF8AA1A)), RoundedCornerShape(20.dp))
+                        .padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "¿Reasignar staff?",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = Color.Black,
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = "El staff seleccionado ya está asignado a la sucursal '$sucursalAnteriorNombre'. ¿Deseas reasignarlo a la nueva sucursal, dejar la sucursal anterior sin staff o seleccionar un staff sin sucursal?",
+                        color = Color.Black,
+                        style = MaterialTheme.typography.bodyMedium,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        Button(
+                            onClick = {
+                                val staff = staffList.find { it.first == staffPendienteId }?.second
+                                val nombreStaff = staff?.get("nombre") as? String ?: ""
+                                responsable = nombreStaff
+                                showDialogConfirmacion = false
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Sí, reasignar", color = Color.White, fontSize = 13.sp)
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Button(
+                            onClick = {
+                                responsable = ""
+                                showDialogConfirmacion = false
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color.White),
+                            border = BorderStroke(2.dp, Color.Black),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Seleccionar otro", color = Color.Black, fontSize = 13.sp)
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Button(
+                        onClick = {
+                            // Dejar la sucursal anterior sin staff
+                            val staff = staffList.find { it.first == staffPendienteId }?.second
+                            val sucursalStaffId = staff?.get("sucursalId") as? String
+                            if (!sucursalStaffId.isNullOrBlank()) {
+                                db.collection("staff").document(staffPendienteId).update("sucursalId", "")
+                            }
+                            val nombreStaff = staff?.get("nombre") as? String ?: ""
+                            responsable = nombreStaff
+                            showDialogConfirmacion = false
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF8AA1A)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Dejar anterior sin staff", color = Color.Black, fontSize = 13.sp)
                     }
                 }
             }

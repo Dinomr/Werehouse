@@ -38,6 +38,7 @@ import coil.compose.rememberAsyncImagePainter
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import com.google.firebase.firestore.ListenerRegistration
+import androidx.compose.ui.res.painterResource
 
 
 @Composable
@@ -96,15 +97,15 @@ fun EditarStaffScreen(navController: NavController) {
                 .addSnapshotListener { snapshot, _ ->
                     if (snapshot != null) {
                         staffList = snapshot.documents.map { it.id to (it.data ?: emptyMap()) }
-                    }
                 }
+        }
             sucursalesListener = db.collection("sucursales").whereEqualTo("usuarioId", currentUser.uid)
                 .addSnapshotListener { snapshot, _ ->
                     if (snapshot != null) {
                         sucursales = snapshot.documents.map { it.id to (it.getString("nombre") ?: "") }
-                    }
                 }
         }
+    }
         onDispose {
             staffListener?.remove()
             sucursalesListener?.remove()
@@ -129,7 +130,7 @@ fun EditarStaffScreen(navController: NavController) {
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize().background(Color.White)) {
             // Encabezado igual que MainActivity
-            Box(
+        Box(
                 modifier = Modifier.fillMaxWidth().background(Color.Black).systemBarsPadding()
         ) {
             Row(
@@ -295,10 +296,9 @@ fun EditarStaffScreen(navController: NavController) {
                                         modifier = Modifier.size(40.dp)
                                     )
                                 } else {
-                                    Icon(
-                                        imageVector = Icons.Default.AccountCircle,
+                                    Image(
+                                        painter = painterResource(id = R.drawable.paisaje),
                                         contentDescription = "Imagen staff",
-                                        tint = Color.Gray,
                                         modifier = Modifier.size(40.dp)
                                     )
                                 }
@@ -387,10 +387,9 @@ fun EditarStaffScreen(navController: NavController) {
                                 modifier = Modifier.fillMaxSize()
                             )
                         } else {
-                            Icon(
-                                imageVector = Icons.Default.AccountCircle,
+                            Image(
+                                painter = painterResource(id = R.drawable.paisaje),
                                 contentDescription = "Imagen staff",
-                                tint = Color.Gray,
                                 modifier = Modifier.size(70.dp)
                             )
                         }
@@ -430,45 +429,48 @@ fun EditarStaffScreen(navController: NavController) {
                     )
                 )
                 Spacer(modifier = Modifier.height(10.dp))
+                // Dropdown de sucursales
                 var sucursalExpanded by remember { mutableStateOf(false) }
-                Box(modifier = Modifier.fillMaxWidth()) {
-                    OutlinedButton(
-                        onClick = { sucursalExpanded = true },
+                if (!showDialogConfirmacion) {
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        OutlinedButton(
+                            onClick = { sucursalExpanded = true },
                             modifier = Modifier.fillMaxWidth().background(Color.White, RoundedCornerShape(50)),
-                        shape = RoundedCornerShape(50),
-                        colors = ButtonDefaults.outlinedButtonColors(containerColor = Color.White)
-                    ) {
-                        Text(
-                            sucursales.find { it.first == sucursalId }?.second ?: "¿A qué sucursal pertenece?",
-                            color = Color.Black,
-                            modifier = Modifier.fillMaxWidth(),
-                            textAlign = TextAlign.Center
-                        )
-                    }
-                    DropdownMenu(
-                        expanded = sucursalExpanded,
-                        onDismissRequest = { sucursalExpanded = false },
-                        modifier = Modifier.background(Color.White)
-                    ) {
-                            sucursalesDisponibles.forEach { (id, nombreSucursal) ->
+                            shape = RoundedCornerShape(50),
+                            colors = ButtonDefaults.outlinedButtonColors(containerColor = Color.White)
+                        ) {
+                            Text(
+                                sucursales.find { it.first == sucursalId }?.second ?: "¿A qué sucursal pertenece?",
+                                color = Color.Black,
+                                modifier = Modifier.fillMaxWidth(),
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = sucursalExpanded,
+                            onDismissRequest = { sucursalExpanded = false },
+                            modifier = Modifier.background(Color.White)
+                        ) {
+                            sucursales.forEach { (id, nombreSucursal) ->
                                 val encargado = staffList.find { it.second["sucursalId"] == id }?.second?.get("nombre") as? String
                                 val staffEncargadoId = staffList.find { it.second["sucursalId"] == id }?.first
-                            DropdownMenuItem(
-                                onClick = {
-                                        if (encargado != null && id != sucursalId && staffEncargadoId != selectedStaffId) {
+                                DropdownMenuItem(
+                                    onClick = {
+                                        if (encargado != null && id != sucursalId && staffEncargadoId != null) {
                                             sucursalSeleccionadaPendiente = id
                                             encargadoActual = encargado
                                             showDialogConfirmacion = true
+                                            sucursalExpanded = false // Cerrar el menú desplegable
                                         } else {
-                                    sucursalId = id
-                                    sucursalExpanded = false
+                                            sucursalId = id
+                                            sucursalExpanded = false
                                         }
                                     },
                                     text = {
                                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                             Text(nombreSucursal, color = Color.Black)
-                                            if (encargado != null && id != sucursalId && staffEncargadoId != selectedStaffId) {
-                                                Text("(Encargado: $encargado)", color = Color.Red, style = MaterialTheme.typography.bodySmall)
+                                            if (encargado != null && id != sucursalId && staffEncargadoId != null) {
+                                                Text("*", color = Color.Red)
                                             }
                                         }
                                     }
@@ -476,16 +478,75 @@ fun EditarStaffScreen(navController: NavController) {
                             }
                         }
                     }
-                    if (showDialogConfirmacion) {
-                        AlertDialog(
-                            onDismissRequest = { showDialogConfirmacion = false },
-                            title = { Text("¿Reasignar encargado?") },
-                            text = {
-                                Text("Esta sucursal ya tiene un encargado ($encargadoActual). ¿Deseas reasignar el encargado a este staff?\n\nTe recomendamos editar el staff sin sucursal asignada para evitar inconsistencias.")
-                            },
-                            confirmButton = {
-                                TextButton(onClick = {
-                                    // Quitar la sucursal al staff anterior
+                }
+                // MODAL DE CONFIRMACIÓN SIEMPRE ENCIMA DE TODO
+                if (showDialogConfirmacion) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color(0x80000000))
+                            .clickable(enabled = false) { },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth(0.8f)
+                                .background(Color.White, shape = RoundedCornerShape(20.dp))
+                                .border(BorderStroke(2.dp, Color(0xFFF8AA1A)), RoundedCornerShape(20.dp))
+                                .padding(16.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "¿Reasignar encargado?",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = Color.Black,
+                                modifier = Modifier.fillMaxWidth(),
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Esta sucursal ya tiene un encargado ($encargadoActual). ¿Deseas reasignar el encargado a este staff?\n\nTe recomendamos editar el staff sin sucursal asignada para evitar inconsistencias.",
+                                color = Color.Black,
+                                style = MaterialTheme.typography.bodySmall,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceEvenly
+                            ) {
+                                Button(
+                                    onClick = {
+                                        val staffEncargadoId = staffList.find { it.second["sucursalId"] == sucursalSeleccionadaPendiente }?.first
+                                        if (staffEncargadoId != null) {
+                                            db.collection("staff").document(staffEncargadoId).update("sucursalId", "")
+                                        }
+                                        sucursalId = sucursalSeleccionadaPendiente
+                                        sucursalExpanded = false
+                                        showDialogConfirmacion = false
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text("Sí, reasignar", color = Color.White, fontSize = 12.sp)
+                                }
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Button(
+                                    onClick = {
+                                        sucursalId = ""
+                                        showDialogConfirmacion = false
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color.White),
+                                    border = BorderStroke(2.dp, Color.Black),
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text("Seleccionar otra", color = Color.Black, fontSize = 12.sp)
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Button(
+                                onClick = {
+                                    // Dejar la sucursal anterior sin staff
                                     val staffEncargadoId = staffList.find { it.second["sucursalId"] == sucursalSeleccionadaPendiente }?.first
                                     if (staffEncargadoId != null) {
                                         db.collection("staff").document(staffEncargadoId).update("sucursalId", "")
@@ -493,18 +554,14 @@ fun EditarStaffScreen(navController: NavController) {
                                     sucursalId = sucursalSeleccionadaPendiente
                                     sucursalExpanded = false
                                     showDialogConfirmacion = false
-                                }) {
-                                    Text("Sí, reasignar")
-                                }
-                            },
-                            dismissButton = {
-                                TextButton(onClick = {
-                                    showDialogConfirmacion = false
-                                }) {
-                                    Text("Cancelar")
-                                }
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF8AA1A)),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("Dejar anterior sin staff", color = Color.Black, fontSize = 12.sp)
                             }
-                        )
+                        }
+                    }
                 }
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(

@@ -31,7 +31,8 @@ import androidx.compose.material.icons.filled.Add
 import coil.compose.rememberAsyncImagePainter
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.compose.material3.AlertDialog
+import androidx.compose.foundation.border
+import androidx.compose.ui.unit.sp
 
 @Composable
 fun AddBranchScreen(navController: NavController) {
@@ -273,26 +274,66 @@ fun AddBranchScreen(navController: NavController) {
                 }
                 // Diálogo de confirmación para reasignar staff
                 if (showDialogConfirmacion) {
-                    AlertDialog(
-                        onDismissRequest = { showDialogConfirmacion = false },
-                        title = { Text("¿Reasignar staff?") },
-                        text = {
-                            Text("El staff seleccionado ya está asignado a la sucursal '$sucursalAnteriorNombre'. ¿Deseas reasignarlo a la nueva sucursal, dejar la sucursal anterior sin staff o seleccionar un staff sin sucursal?")
-                        },
-                        confirmButton = {
-                            TextButton(onClick = {
-                                selectedStaffId = staffPendienteId
-                                showDialogConfirmacion = false
-                            }) { Text("Sí, reasignar") }
-                        },
-                        dismissButton = {
-                            Row {
-                                TextButton(onClick = {
-                                    selectedStaffId = ""
-                                    showDialogConfirmacion = false
-                                }) { Text("Seleccionar otro staff") }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color(0x80000000))
+                            .clickable(enabled = false) { },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth(0.8f)
+                                .background(Color.White, shape = RoundedCornerShape(20.dp))
+                                .border(BorderStroke(2.dp, Color(0xFFF8AA1A)), RoundedCornerShape(20.dp))
+                                .padding(16.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "¿Reasignar staff?",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = Color.Black,
+                                modifier = Modifier.fillMaxWidth(),
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "El staff seleccionado ya está asignado a la sucursal '$sucursalAnteriorNombre'. ¿Deseas reasignarlo a la nueva sucursal, dejar la sucursal anterior sin staff o seleccionar un staff sin sucursal?",
+                                color = Color.Black,
+                                style = MaterialTheme.typography.bodySmall,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceEvenly
+                            ) {
+                                Button(
+                                    onClick = {
+                                        selectedStaffId = staffPendienteId
+                                        showDialogConfirmacion = false
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text("Sí, reasignar", color = Color.White, fontSize = 12.sp)
+                                }
                                 Spacer(modifier = Modifier.width(8.dp))
-                                TextButton(onClick = {
+                                Button(
+                                    onClick = {
+                                        selectedStaffId = ""
+                                        showDialogConfirmacion = false
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color.White),
+                                    border = BorderStroke(2.dp, Color.Black),
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text("Seleccionar otro", color = Color.Black, fontSize = 12.sp)
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Button(
+                                onClick = {
                                     // Dejar la sucursal anterior sin staff
                                     val staff = staffList.find { it.first == staffPendienteId }?.second
                                     val sucursalStaffId = staff?.get("sucursalId") as? String
@@ -301,10 +342,14 @@ fun AddBranchScreen(navController: NavController) {
                                     }
                                     selectedStaffId = staffPendienteId
                                     showDialogConfirmacion = false
-                                }) { Text("Dejar anterior sin staff") }
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF8AA1A)),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("Dejar anterior sin staff", color = Color.Black, fontSize = 12.sp)
                             }
                         }
-                    )
+                    }
                 }
                 Button(
                     onClick = {
